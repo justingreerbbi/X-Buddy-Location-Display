@@ -67,6 +67,47 @@
             font-weight: 500;
         }
 
+        .lookup-mode {
+            margin-top: 16px;
+            padding: 16px;
+            border: 1px solid var(--panel-border);
+            border-radius: 16px;
+        }
+
+        .lookup-mode legend {
+            font-size: 0.95rem;
+            font-weight: 600;
+            padding: 0 6px;
+            color: var(--muted);
+        }
+
+        .radio-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .radio-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid var(--panel-border);
+            border-radius: 999px;
+            padding: 8px 14px;
+            cursor: pointer;
+            transition: border 0.2s ease, background 0.2s ease;
+        }
+
+        .radio-pill input[type="radio"] {
+            accent-color: var(--accent);
+        }
+
+        .radio-pill:hover {
+            border-color: var(--accent);
+            background: rgba(29, 155, 240, 0.08);
+        }
+
         input[type="checkbox"] {
             width: 20px;
             height: 20px;
@@ -172,6 +213,20 @@
             <label>
                 <input type="checkbox" id="debug"> Enable Debug Mode
             </label>
+            <fieldset class="lookup-mode">
+                <legend>Location Lookup Mode</legend>
+                <div class="radio-group">
+                    <label class="radio-pill">
+                        <input type="radio" name="lookupMode" value="hover" checked> On Post Hover (default)
+                    </label>
+                    <label class="radio-pill">
+                        <input type="radio" name="lookupMode" value="auto"> Auto Fetch
+                    </label>
+                </div>
+                <p style="margin:12px 0 0; color:var(--muted); font-size:0.9rem;">
+                    Hover mode only fetches new profiles when you hover a post, but cached locations still display automatically.
+                </p>
+            </fieldset>
             <div>
                 <button id="save">Save</button>
             </div>

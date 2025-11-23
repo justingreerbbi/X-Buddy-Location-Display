@@ -3,6 +3,11 @@
 console.log('X Buddy: preview tracker booting');
 
 const TWEET_SELECTOR = 'article[data-testid="tweet"]';
+const LOOKUP_MODE_KEY = 'lookupMode';
+const LOOKUP_MODES = {
+    AUTO: 'auto',
+    HOVER: 'hover',
+};
 const trackedTweets = new Set();
 const tweetVisibility = new Map();
 const usernameLocations = new Map();
@@ -11,6 +16,7 @@ const pendingUsernameUpdates = new Map();
 let intersectionObserver = null;
 let currentUsername = null;
 let pendingUsername = null;
+let lookupMode = LOOKUP_MODES.HOVER;
 const ABOUT_LABEL_TEXT = 'Account based in';
 const ABOUT_LABEL_REGEX = /Account based in\s+([^\n]+)/i;
 const COUNTRY_FLAG_MAP = new Map([
@@ -148,11 +154,11 @@ function updateActiveTweet() {
     const username = extractUsername(bestTweet);
     if (!username) return;
 
-    scheduleLookupForUsername(username);
+    scheduleLookupForUsername(username, 'auto');
 }
 
-function scheduleLookupForUsername(username) {
-    if (username === pendingUsername) return;
+function scheduleLookupForUsername(username, reason = 'auto') {
+    if (!username) return;
 
     if (usernameLocations.has(username)) {
         const knownLocation = usernameLocations.get(username);
@@ -162,6 +168,16 @@ function scheduleLookupForUsername(username) {
         updateLocationDisplays(username, knownLocation);
         return;
     }
+
+    if (reason === 'hover') {
+        if (username === pendingUsername) return;
+        initiateLocationLookup(username);
+        return;
+    }
+
+    if (lookupMode !== LOOKUP_MODES.AUTO) return;
+
+    if (username === pendingUsername) return;
 
     const existingTimer = pendingUsernameUpdates.get(username);
     if (existingTimer) {
@@ -174,6 +190,15 @@ function scheduleLookupForUsername(username) {
     }, 250);
 
     pendingUsernameUpdates.set(username, timer);
+}
+
+function handleTweetHover(event) {
+    if (lookupMode !== LOOKUP_MODES.HOVER) return;
+    const tweet = event?.currentTarget;
+    if (!tweet) return;
+    const username = extractUsername(tweet);
+    if (!username) return;
+    scheduleLookupForUsername(username, 'hover');
 }
 
 function initiateLocationLookup(username) {
@@ -211,6 +236,7 @@ function trackTweet(tweet) {
     trackedTweets.add(tweet);
     tweetVisibility.set(tweet, 0);
     intersectionObserver.observe(tweet);
+    tweet.addEventListener('mouseenter', handleTweetHover);
     applyLocationToTweet(tweet);
 }
 
@@ -219,6 +245,7 @@ function untrackTweet(tweet) {
     trackedTweets.delete(tweet);
     tweetVisibility.delete(tweet);
     intersectionObserver.unobserve(tweet);
+    tweet.removeEventListener('mouseenter', handleTweetHover);
 }
 
 function collectTweets(node) {
@@ -490,4 +517,31 @@ function ensureLocationForUsername(username) {
     });
 }
 
+initialiseLookupModePreference();
 ready(startScript);
+
+function initialiseLookupModePreference() {
+    chrome.storage.sync.get({ [LOOKUP_MODE_KEY]: LOOKUP_MODES.HOVER }, (data) => {
+        if (chrome.runtime.lastError) {
+            console.warn('X Buddy lookup mode read failed', chrome.runtime.lastError);
+            return;
+        }
+        applyLookupModePreference(data[LOOKUP_MODE_KEY]);
+    });
+
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+        if (areaName !== 'sync') return;
+        if (!Object.prototype.hasOwnProperty.call(changes, LOOKUP_MODE_KEY)) return;
+        applyLookupModePreference(changes[LOOKUP_MODE_KEY]?.newValue);
+    });
+}
+
+function applyLookupModePreference(mode) {
+    const normalized = mode === LOOKUP_MODES.AUTO ? LOOKUP_MODES.AUTO : LOOKUP_MODES.HOVER;
+    if (lookupMode === normalized) return;
+    if (normalized === LOOKUP_MODES.HOVER) {
+        pendingUsernameUpdates.forEach((timer) => clearTimeout(timer));
+        pendingUsernameUpdates.clear();
+    }
+    lookupMode = normalized;
+}

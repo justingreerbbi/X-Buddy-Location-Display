@@ -1,5 +1,7 @@
 // Options script
 const LOCATION_STORAGE_KEY = 'xbuddyLocationCache';
+const LOOKUP_MODE_KEY = 'lookupMode';
+const LOOKUP_MODE_DEFAULT = 'hover';
 
 document.addEventListener('DOMContentLoaded', () => {
     const debugCheckbox = document.getElementById('debug');
@@ -11,11 +13,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const totalEntriesField = document.getElementById('totalEntries');
     const uniqueLocationsField = document.getElementById('uniqueLocations');
     const breakdownList = document.getElementById('locationBreakdown');
+    const lookupModeRadios = document.querySelectorAll('input[name="lookupMode"]');
 
     const setStatus = (message, isError = false) => {
         if (!statusField) return;
         statusField.textContent = message || '';
         statusField.style.color = isError ? 'red' : '';
+    };
+
+    const getSelectedLookupMode = () => {
+        let selected = LOOKUP_MODE_DEFAULT;
+        lookupModeRadios.forEach((radio) => {
+            if (radio.checked) {
+                selected = radio.value;
+            }
+        });
+        return selected;
+    };
+
+    const setLookupModeRadios = (value) => {
+        const normalized = value === 'auto' ? 'auto' : LOOKUP_MODE_DEFAULT;
+        lookupModeRadios.forEach((radio) => {
+            radio.checked = radio.value === normalized;
+        });
     };
 
     const refreshStats = () => {
@@ -25,15 +45,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    chrome.storage.sync.get('debug', (data) => {
+    chrome.storage.sync.get({ debug: false, [LOOKUP_MODE_KEY]: LOOKUP_MODE_DEFAULT }, (data) => {
         if (debugCheckbox) {
-            debugCheckbox.checked = data.debug || false;
+            debugCheckbox.checked = Boolean(data.debug);
         }
+        setLookupModeRadios(data[LOOKUP_MODE_KEY]);
     });
 
     saveButton?.addEventListener('click', () => {
         if (!debugCheckbox) return;
-        chrome.storage.sync.set({ debug: debugCheckbox.checked }, () => {
+        const selectedMode = getSelectedLookupMode();
+        chrome.storage.sync.set({ debug: debugCheckbox.checked, [LOOKUP_MODE_KEY]: selectedMode }, () => {
             alert('Settings saved!');
         });
     });
