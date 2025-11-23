@@ -117,6 +117,50 @@
             margin-top: 12px;
             font-weight: 500;
         }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .stats-card {
+            background: rgba(231, 233, 234, 0.05);
+            border: 1px solid rgba(139, 152, 165, 0.2);
+            border-radius: 16px;
+            padding: 16px;
+        }
+
+        .stats-card h3 {
+            margin: 0 0 6px;
+            font-size: 0.95rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stats-card strong {
+            font-size: 1.6rem;
+        }
+
+        #locationBreakdown {
+            margin: 12px 0 0;
+            padding: 0;
+            list-style: none;
+            font-weight: 500;
+        }
+
+        #locationBreakdown li {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(139, 152, 165, 0.2);
+        }
+
+        #locationBreakdown li:last-child {
+            border-bottom: none;
+        }
     </style>
 </head>
 
@@ -143,6 +187,21 @@
                 <button id="importCsvButton">Sync</button>
             </div>
             <p id="status" role="status"></p>
+        </section>
+
+        <section class="section" aria-live="polite">
+            <h2>Stats</h2>
+            <div class="stats-grid">
+                <div class="stats-card">
+                    <h3>Total Entries</h3>
+                    <strong id="totalEntries">0</strong>
+                </div>
+                <div class="stats-card">
+                    <h3>Unique Locations</h3>
+                    <strong id="uniqueLocations">0</strong>
+                </div>
+            </div>
+            <ul id="locationBreakdown"></ul>
         </section>
     </main>
     <script src="options.js"></script>

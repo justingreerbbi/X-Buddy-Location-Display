@@ -30,7 +30,7 @@ There are more options planned. For now, I am just trying to get the code base s
 ## How it works
 
 - The content script runs on your timeline.
-- Uses background windows to fetch the information which is then passed back to the main window.
+- Uses background windows to fetch the information which is then passed back to the main window. It is also important to note that a new window will open to load the data and then will close.
 - The timeline updates and the results are stored for faster loading in the future.
 
 ## Notes

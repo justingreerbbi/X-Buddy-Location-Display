@@ -8,11 +8,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const importInput = document.getElementById('importCsv');
     const importButton = document.getElementById('importCsvButton');
     const statusField = document.getElementById('status');
+    const totalEntriesField = document.getElementById('totalEntries');
+    const uniqueLocationsField = document.getElementById('uniqueLocations');
+    const breakdownList = document.getElementById('locationBreakdown');
 
     const setStatus = (message, isError = false) => {
         if (!statusField) return;
         statusField.textContent = message || '';
         statusField.style.color = isError ? 'red' : '';
+    };
+
+    const refreshStats = () => {
+        if (!totalEntriesField || !uniqueLocationsField || !breakdownList) return;
+        updateStats(totalEntriesField, uniqueLocationsField, breakdownList).catch((error) => {
+            console.error('X Buddy stats refresh failed', error);
+        });
     };
 
     chrome.storage.sync.get('debug', (data) => {
@@ -33,6 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const count = await exportLocationCsv();
             setStatus(count ? `Exported ${count} entr${count === 1 ? 'y' : 'ies'}.` : 'No cached entries found.');
+            refreshStats();
         } catch (error) {
             console.error('X Buddy export failed', error);
             setStatus('Failed to export CSV. See console for details.', true);
@@ -51,11 +62,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const imported = await importLocationsFromCsv(file);
             importInput.value = '';
             setStatus(`Synced ${imported} entr${imported === 1 ? 'y' : 'ies'} from CSV.`);
+            refreshStats();
         } catch (error) {
             console.error('X Buddy import failed', error);
             setStatus(error?.message || 'Failed to import CSV. See console for details.', true);
         }
     });
+
+    refreshStats();
 });
 
 async function exportLocationCsv() {
@@ -218,4 +232,52 @@ function writeLocationCache(cache) {
             resolve();
         });
     });
+}
+
+async function updateStats(totalEl, uniqueEl, listEl) {
+    const cache = await readLocationCache();
+    const entries = Object.entries(cache);
+    totalEl.textContent = String(entries.length);
+
+    const counts = new Map();
+    entries.forEach(([, info]) => {
+        const loc = (info?.location || '').trim();
+        if (!loc) return;
+        counts.set(loc, (counts.get(loc) || 0) + 1);
+    });
+
+    uniqueEl.textContent = String(counts.size);
+    listEl.innerHTML = '';
+
+    const totalWithLocation = Array.from(counts.values()).reduce((sum, value) => sum + value, 0);
+    if (!totalWithLocation) {
+        const empty = document.createElement('li');
+        empty.textContent = 'No locations collected yet.';
+        empty.style.color = 'var(--muted)';
+        listEl.appendChild(empty);
+        return;
+    }
+
+    const items = Array.from(counts.entries()).sort((a, b) => {
+        if (b[1] === a[1]) return a[0].localeCompare(b[0]);
+        return b[1] - a[1];
+    });
+
+    items.forEach(([location, count]) => {
+        const percent = formatPercentage((count / totalWithLocation) * 100);
+        const li = document.createElement('li');
+        const name = document.createElement('span');
+        name.textContent = location;
+        const value = document.createElement('span');
+        value.textContent = `${percent}% · ${count}`;
+        li.append(name, value);
+        listEl.appendChild(li);
+    });
+}
+
+function formatPercentage(value) {
+    if (!Number.isFinite(value)) return '0';
+    if (value >= 10) return value.toFixed(0);
+    const rounded = value.toFixed(1);
+    return rounded.replace(/\.0$/, '');
 }
