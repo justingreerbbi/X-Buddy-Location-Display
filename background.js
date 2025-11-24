@@ -203,7 +203,8 @@ async function scrapeLocationFromAboutPage(tabId, username) {
         await persistLocation(username, location);
         notifyLocationFound(username, location ?? null);
     } catch (error) {
-        console.error(`X Buddy failed to read location for @${username}`, error);
+        console.warn(`X Buddy failed to read location for @${username}`, error);
+        notifyLocationFound(username, null);
     } finally {
         pendingScrapes.delete(tabId);
         await cleanupPreviewTab();

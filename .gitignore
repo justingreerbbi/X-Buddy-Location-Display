@@ -1,3 +1,4 @@
 *.zip
 .venv
 .gitattributes
+.DS_Store
