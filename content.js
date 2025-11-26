@@ -168,7 +168,7 @@ function updateActiveTweet() {
 	const username = extractUsername(bestTweet);
 	if (!username) return;
 
-	scheduleLookupForUsername(username, "auto");
+	// Removed auto fetching on visibility
 }
 
 function scheduleLookupForUsername(username, reason = "auto") {
@@ -188,21 +188,7 @@ function scheduleLookupForUsername(username, reason = "auto") {
 		return;
 	}
 
-	if (lookupMode !== LOOKUP_MODES.AUTO) return;
-
-	if (username === pendingUsername) return;
-
-	const existingTimer = pendingUsernameUpdates.get(username);
-	if (existingTimer) {
-		clearTimeout(existingTimer);
-	}
-
-	const timer = setTimeout(() => {
-		pendingUsernameUpdates.delete(username);
-		initiateLocationLookup(username);
-	}, 250);
-
-	pendingUsernameUpdates.set(username, timer);
+	// Removed auto mode fetching
 }
 
 function handleTweetHover(event) {
@@ -524,7 +510,8 @@ function applyLocationToTweet(tweet) {
 	if (location) {
 		renderLocationTag(tweet, location);
 	} else {
-		ensureLocationForUsername(username);
+		// Load from cache if available, don't fetch
+		ensureLocationForUsername(username, false);
 	}
 }
 
@@ -580,7 +567,7 @@ function resolveLocationDisplay(location) {
 	return { labelText: location, flagSrc: flagUrl };
 }
 
-function ensureLocationForUsername(username) {
+function ensureLocationForUsername(username, allowFetch = true) {
 	if (!username || pendingLocationLookups.has(username)) return;
 	pendingLocationLookups.add(username);
 	chrome.runtime.sendMessage({ type: "xbuddy:get-location", username }, (response) => {
@@ -597,7 +584,7 @@ function ensureLocationForUsername(username) {
 			// Use cached location
 			usernameLocations.set(username, cached.location);
 			updateLocationDisplays(username, cached.location);
-		} else {
+		} else if (allowFetch) {
 			// Fetch new location
 			requestPreviewWindow(username);
 		}

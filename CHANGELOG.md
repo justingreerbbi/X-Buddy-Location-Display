@@ -21,12 +21,15 @@ All notable changes to this project will be documented in this file.
 -   Location text formatted in title case (e.g., "United States")
 -   Flag icon moved to the end of the location text
 -   Improved UI styling and spacing for location tags
+-   Locations are now automatically displayed for accounts with cached data without requiring hover
 
 ### Fixed
 
 -   Syntax errors and code structure issues
 -   Proper escaping of location text to prevent injection
 -   Flag button visibility based on lookup mode
+-   Location fetching now only occurs on hover/menu actions for uncached accounts
+-   Improved tab cleanup for location lookups to prevent orphaned tabs
 
 ### Technical
 
