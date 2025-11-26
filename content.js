@@ -1,6 +1,6 @@
 // Content script for X Buddy preview popup
 
-console.log("X Buddy: preview tracker booting");
+// X Buddy: preview tracker booting
 
 const TWEET_SELECTOR = 'article[data-testid="tweet"]';
 const LOOKUP_MODE_KEY = "lookupMode";
@@ -11,6 +11,7 @@ const LOOKUP_MODES = {
 };
 const DEBUG_KEY = "debug";
 const AUTO_SCROLL_KEY = "autoScroll";
+const FILTERED_LOCATIONS_KEY = "filteredLocations";
 const AUTO_SCROLL_POST_DELAY_MS = 5000;
 const AUTO_SCROLL_BATCH_SIZE = 10;
 const AUTO_SCROLL_REST_MS = 2 * 60 * 1000;
@@ -31,6 +32,7 @@ let debugModeEnabled = false;
 let autoScrollPreference = false;
 let autoScrollController = null;
 let autoScrollLastTweet = null;
+let filteredLocations = new Set();
 const ABOUT_LABEL_TEXT = "Account based in";
 const ABOUT_LABEL_REGEX = /Account based in\s+([^\n]+)/i;
 const COUNTRY_FLAG_MAP = new Map([
@@ -226,7 +228,7 @@ function requestPreviewWindow(username) {
 }
 
 function notifyLocationLookupStarted(username) {
-	console.log(`X Buddy: locating profile @${username}`);
+	// Locating profile
 }
 
 function trackTweet(tweet) {
@@ -379,7 +381,7 @@ function handleAboutPage() {
 	const username = extractUsernameFromPath(location.pathname, location.search);
 	if (!username) return;
 	aboutWatcherStarted = true;
-	console.log(`X Buddy: about page detected for @${username}`);
+	// About page detected
 	watchForAboutLocation(username);
 }
 
@@ -414,7 +416,7 @@ function tryCaptureAboutLocation(username) {
 	const location = extractAboutLocation();
 	if (!location) return false;
 
-	//console.log(`X Buddy: location for @${username}: ${location}`);
+	// Location found
 	usernameLocations.set(username, location);
 	updateLocationDisplays(username, location);
 
@@ -424,7 +426,11 @@ function tryCaptureAboutLocation(username) {
 		pendingUsernameUpdates.delete(username);
 	}
 
-	chrome.runtime.sendMessage({ type: "xbuddy:store-location", username, location });
+	chrome.runtime.sendMessage({ type: "xbuddy:store-location", username, location }, () => {
+		if (chrome.runtime.lastError) {
+			// Suppress unchecked error
+		}
+	});
 	return true;
 }
 
@@ -509,6 +515,12 @@ function applyLocationToTweet(tweet) {
 	const location = usernameLocations.get(username);
 	if (location) {
 		renderLocationTag(tweet, location);
+		// Hide tweet if location is filtered
+		if (filteredLocations.has(location)) {
+			tweet.style.display = "none";
+		} else {
+			tweet.style.display = "";
+		}
 	} else {
 		// Load from cache if available, don't fetch
 		ensureLocationForUsername(username, false);
@@ -520,6 +532,12 @@ function updateLocationDisplays(username, location) {
 		const tweetUser = extractUsername(tweet);
 		if (tweetUser === username) {
 			renderLocationTag(tweet, location);
+			// Hide tweet if location is filtered
+			if (filteredLocations.has(location)) {
+				tweet.style.display = "none";
+			} else {
+				tweet.style.display = "";
+			}
 		}
 	});
 }
@@ -600,6 +618,7 @@ function initialisePreferenceSync() {
 			[LOOKUP_MODE_KEY]: LOOKUP_MODES.HOVER,
 			[DEBUG_KEY]: false,
 			[AUTO_SCROLL_KEY]: false,
+			[FILTERED_LOCATIONS_KEY]: [],
 		},
 		(data) => {
 			if (chrome.runtime.lastError) {
@@ -608,6 +627,7 @@ function initialisePreferenceSync() {
 			}
 			applyLookupModePreference(data[LOOKUP_MODE_KEY]);
 			applyAutomationPreferences(Boolean(data[DEBUG_KEY]), Boolean(data[AUTO_SCROLL_KEY]));
+			filteredLocations = new Set(data[FILTERED_LOCATIONS_KEY] || []);
 		}
 	);
 
@@ -622,6 +642,12 @@ function initialisePreferenceSync() {
 			const debugValue = Object.prototype.hasOwnProperty.call(changes, DEBUG_KEY) ? Boolean(changes[DEBUG_KEY]?.newValue) : debugModeEnabled;
 			const autoScrollValue = Object.prototype.hasOwnProperty.call(changes, AUTO_SCROLL_KEY) ? Boolean(changes[AUTO_SCROLL_KEY]?.newValue) : autoScrollPreference;
 			applyAutomationPreferences(debugValue, autoScrollValue);
+		}
+
+		if (Object.prototype.hasOwnProperty.call(changes, FILTERED_LOCATIONS_KEY)) {
+			filteredLocations = new Set(changes[FILTERED_LOCATIONS_KEY]?.newValue || []);
+			// Re-apply filtering to existing tweets
+			trackedTweets.forEach((tweet) => applyLocationToTweet(tweet));
 		}
 	});
 }

@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 -   Options page for configuring lookup modes and auto-scroll
 -   Support for multiple country flags based on location mapping
 -   Automatic cache expiration for location data (30 days)
+-   Content filtering to hide posts from specific countries
 
 ### Changed
 

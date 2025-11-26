@@ -5,8 +5,28 @@ const LOOKUP_MODE_DEFAULT = "hover";
 const LOOKUP_MODE_VALUES = new Set(["hover", "auto", "menu"]);
 const DEBUG_KEY = "debug";
 const AUTO_SCROLL_KEY = "autoScroll";
+const FILTERED_LOCATIONS_KEY = "filteredLocations";
 
 document.addEventListener("DOMContentLoaded", () => {
+	// Sidebar navigation functionality
+	const navLinks = document.querySelectorAll(".nav-link");
+	const sectionContents = document.querySelectorAll(".section-content");
+
+	navLinks.forEach((link) => {
+		link.addEventListener("click", (e) => {
+			e.preventDefault();
+			const sectionName = link.getAttribute("data-section");
+
+			// Remove active class from all links and contents
+			navLinks.forEach((lnk) => lnk.classList.remove("active"));
+			sectionContents.forEach((content) => content.classList.remove("active"));
+
+			// Add active class to clicked link and corresponding content
+			link.classList.add("active");
+			document.getElementById(sectionName).classList.add("active");
+		});
+	});
+
 	const debugCheckbox = document.getElementById("debug");
 	const autoScrollCheckbox = document.getElementById("autoScroll");
 	const autoScrollRow = document.getElementById("autoScrollRow");
@@ -19,6 +39,59 @@ document.addEventListener("DOMContentLoaded", () => {
 	const uniqueLocationsField = document.getElementById("uniqueLocations");
 	const breakdownList = document.getElementById("locationBreakdown");
 	const lookupModeRadios = document.querySelectorAll('input[name="lookupMode"]');
+	const locationSelect = document.getElementById("locationSelect");
+	const addFilterButton = document.getElementById("addFilter");
+	const filteredList = document.getElementById("filteredList");
+
+	let filteredLocations = new Set();
+	let locationCache = {};
+
+	const displayFilteredList = () => {
+		if (!filteredList) return;
+		filteredList.innerHTML = "";
+		if (filteredLocations.size === 0) {
+			filteredList.innerHTML = "<p style='color: var(--muted); margin: 0;'>No locations filtered.</p>";
+			return;
+		}
+		filteredLocations.forEach((location) => {
+			const item = document.createElement("div");
+			item.className = "filter-item";
+			item.innerHTML = `
+				<span>${location.replace(/\b\w/g, (l) => l.toUpperCase())}</span>
+				<button data-location="${location}">Remove</button>
+			`;
+			item.querySelector("button").addEventListener("click", () => {
+				filteredLocations.delete(location);
+				displayFilteredList();
+				saveFilteredLocations();
+			});
+			filteredList.appendChild(item);
+		});
+	};
+
+	const populateLocationSelect = (cache) => {
+		if (!locationSelect) return;
+		locationSelect.innerHTML = '<option value="">Select a location...</option>';
+		const locations = new Set();
+		Object.values(cache).forEach((entry) => {
+			if (entry && entry.location) {
+				locations.add(entry.location);
+			}
+		});
+		const sortedLocations = Array.from(locations).sort();
+		sortedLocations.forEach((location) => {
+			if (!filteredLocations.has(location)) {
+				const option = document.createElement("option");
+				option.value = location;
+				option.textContent = location.replace(/\b\w/g, (l) => l.toUpperCase());
+				locationSelect.appendChild(option);
+			}
+		});
+	};
+
+	const saveFilteredLocations = () => {
+		chrome.storage.sync.set({ [FILTERED_LOCATIONS_KEY]: Array.from(filteredLocations) });
+	};
 
 	const setStatus = (message, isError = false) => {
 		if (!statusField) return;
@@ -58,7 +131,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	debugCheckbox?.addEventListener("change", updateAutoScrollVisibility);
 
-	chrome.storage.sync.get({ [DEBUG_KEY]: false, [LOOKUP_MODE_KEY]: LOOKUP_MODE_DEFAULT, [AUTO_SCROLL_KEY]: false }, (data) => {
+	chrome.storage.sync.get({ [DEBUG_KEY]: false, [LOOKUP_MODE_KEY]: LOOKUP_MODE_DEFAULT, [AUTO_SCROLL_KEY]: false, [FILTERED_LOCATIONS_KEY]: [] }, (data) => {
 		if (debugCheckbox) {
 			debugCheckbox.checked = Boolean(data[DEBUG_KEY]);
 		}
@@ -67,6 +140,13 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 		updateAutoScrollVisibility();
 		setLookupModeRadios(data[LOOKUP_MODE_KEY]);
+		filteredLocations = new Set(data[FILTERED_LOCATIONS_KEY] || []);
+		// Get cache from local storage
+		chrome.storage.local.get([LOCATION_STORAGE_KEY], (localData) => {
+			locationCache = localData[LOCATION_STORAGE_KEY] || {};
+			populateLocationSelect(locationCache);
+		});
+		displayFilteredList();
 	});
 
 	saveButton?.addEventListener("click", () => {
@@ -82,6 +162,15 @@ document.addEventListener("DOMContentLoaded", () => {
 				alert("Settings saved!");
 			}
 		);
+	});
+
+	addFilterButton?.addEventListener("click", () => {
+		const selectedLocation = locationSelect?.value;
+		if (!selectedLocation) return;
+		filteredLocations.add(selectedLocation);
+		populateLocationSelect(locationCache); // Refresh dropdown to remove the added one
+		displayFilteredList();
+		saveFilteredLocations();
 	});
 
 	exportButton?.addEventListener("click", async () => {

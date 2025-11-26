@@ -7,136 +7,220 @@
 			:root {
 				font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 				color-scheme: dark;
-				--bg: #0f1419;
-				--panel: #15202b;
-				--panel-border: #253341;
-				--text: #e7e9ea;
-				--muted: #8b98a5;
+				--bg: #000000;
+				--panel: #16181c;
+				--panel-border: #2f3336;
+				--text: #ffffff;
+				--muted: #71767b;
 				--accent: #1d9bf0;
 				--accent-hover: #1a8cd8;
+				--border: #2f3336;
+				--hover: rgba(255, 255, 255, 0.03);
+				--input-bg: #0f1419;
+				--input-border: #536471;
+				--blue-hover: rgba(29, 155, 240, 0.1);
 			}
 
 			body {
 				margin: 0;
 				min-height: 100vh;
+				background: var(--bg);
+				color: var(--text);
+				font-size: 15px;
+				line-height: 1.4;
+			}
+
+			.container {
+				max-width: 1200px;
+				margin: 0 auto;
+				min-height: 100vh;
 				display: flex;
-				align-items: center;
-				justify-content: center;
-				background: radial-gradient(circle at top, rgba(29, 155, 240, 0.25), transparent 60%), var(--bg);
+			}
+
+			.sidebar {
+				width: 240px;
+				background: var(--panel);
+				border-right: 1px solid var(--border);
+				padding: 20px 0;
+			}
+
+			.sidebar-header {
+				padding: 0 16px 20px;
+				border-bottom: 1px solid var(--border);
+				margin-bottom: 20px;
+			}
+
+			.sidebar-header h2 {
+				margin: 0;
+				font-size: 20px;
+				font-weight: 700;
 				color: var(--text);
 			}
 
-			.options-shell {
-				width: min(640px, calc(100% - 32px));
+			.nav-link {
+				display: block;
+				padding: 12px 16px;
+				color: var(--muted);
+				text-decoration: none;
+				font-weight: 400;
+				transition: all 0.2s ease;
+				border-left: 2px solid transparent;
+			}
+
+			.nav-link:hover {
+				background: var(--hover);
+				color: var(--text);
+			}
+
+			.nav-link.active {
+				color: var(--text);
+				background: var(--blue-hover);
+				border-left-color: var(--accent);
+			}
+
+			.main {
+				flex: 1;
 				background: var(--panel);
-				border: 1px solid var(--panel-border);
-				border-radius: 24px;
-				padding: 32px;
-				box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+				min-height: 100vh;
 			}
 
-			h1 {
-				margin-top: 0;
-				font-size: 1.75rem;
+			.main-content {
+				padding: 20px 32px;
+				max-width: 600px;
+			}
+
+			.section-content {
+				display: none;
+			}
+
+			.section-content.active {
+				display: block;
+			}
+
+			.main-header {
+				padding-bottom: 20px;
+				border-bottom: 1px solid var(--border);
+				margin-bottom: 32px;
+			}
+
+			.main-header h1 {
+				margin: 0 0 8px;
+				font-size: 24px;
 				font-weight: 700;
+				color: var(--text);
 			}
 
-			h2 {
-				margin-bottom: 0.25rem;
-				font-size: 1.1rem;
-				font-weight: 600;
+			.main-header p {
+				margin: 0;
+				color: var(--muted);
+				font-size: 15px;
 			}
 
 			.section {
-				border-top: 1px solid var(--panel-border);
-				padding-top: 24px;
-				margin-top: 24px;
+				margin-bottom: 40px;
 			}
 
-			.section:first-of-type {
-				border-top: none;
-				padding-top: 0;
-				margin-top: 0;
+			.section h2 {
+				margin: 0 0 16px;
+				font-size: 20px;
+				font-weight: 700;
+				color: var(--text);
+			}
+
+			.section p {
+				margin: 0 0 20px;
+				color: var(--muted);
+				font-size: 15px;
+				line-height: 1.4;
 			}
 
 			label {
-				display: inline-flex;
-				align-items: center;
-				gap: 8px;
-				font-weight: 500;
+				display: flex;
+				align-items: flex-start;
+				gap: 12px;
+				font-weight: 400;
+				color: var(--text);
+				cursor: pointer;
+				margin-bottom: 16px;
 			}
 
 			.nested-option {
-				margin-left: 28px;
+				margin-left: 32px;
 				margin-top: 12px;
 				padding-left: 12px;
-				border-left: 2px solid rgba(139, 152, 165, 0.25);
+				border-left: 2px solid rgba(113, 118, 123, 0.25);
 			}
 
 			.option-note {
 				margin: 6px 0 0;
-				font-size: 0.85rem;
+				font-size: 14px;
 				color: var(--muted);
 			}
 
 			.lookup-mode {
-				margin-top: 16px;
-				padding: 16px;
-				border: 1px solid var(--panel-border);
+				margin-top: 20px;
+				padding: 20px;
+				border: 1px solid var(--border);
 				border-radius: 16px;
+				background: var(--input-bg);
 			}
 
 			.lookup-mode legend {
-				font-size: 0.95rem;
+				font-size: 16px;
 				font-weight: 600;
-				padding: 0 6px;
-				color: var(--muted);
+				padding: 0 8px;
+				color: var(--text);
+				margin-bottom: 16px;
 			}
 
 			.radio-group {
 				display: flex;
-				flex-wrap: wrap;
-				gap: 12px;
-				margin-top: 12px;
+				flex-direction: column;
+				gap: 8px;
 			}
 
 			.radio-pill {
 				display: flex;
 				align-items: center;
-				gap: 8px;
-				border: 1px solid var(--panel-border);
-				border-radius: 999px;
-				padding: 8px 14px;
+				gap: 12px;
+				padding: 12px 16px;
+				border: 1px solid var(--input-border);
+				border-radius: 8px;
+				background: var(--input-bg);
 				cursor: pointer;
 				transition: border 0.2s ease, background 0.2s ease;
+			}
+
+			.radio-pill:hover {
+				border-color: var(--accent);
+				background: var(--blue-hover);
 			}
 
 			.radio-pill input[type="radio"] {
 				accent-color: var(--accent);
 			}
 
-			.radio-pill:hover {
-				border-color: var(--accent);
-				background: rgba(29, 155, 240, 0.08);
-			}
-
 			input[type="checkbox"] {
 				width: 20px;
 				height: 20px;
 				border-radius: 4px;
+				border: 1px solid var(--input-border);
+				background: var(--input-bg);
+				accent-color: var(--accent);
+				margin-top: 2px;
 			}
 
 			button {
-				margin-top: 16px;
 				border: none;
 				border-radius: 999px;
-				padding: 10px 20px;
-				font-size: 0.95rem;
+				padding: 8px 16px;
+				font-size: 15px;
 				font-weight: 600;
 				cursor: pointer;
 				background: var(--accent);
 				color: #fff;
 				transition: background 0.2s ease;
+				min-height: 36px;
 			}
 
 			button:hover {
@@ -148,9 +232,55 @@
 				cursor: not-allowed;
 			}
 
-			p {
-				color: var(--muted);
-				line-height: 1.4;
+			.filter-row {
+				display: flex;
+				gap: 12px;
+				align-items: center;
+				margin-bottom: 20px;
+			}
+
+			.filter-row select {
+				flex: 1;
+				padding: 12px 16px;
+				border: 1px solid var(--input-border);
+				border-radius: 8px;
+				background: var(--input-bg);
+				color: var(--text);
+				font-size: 15px;
+			}
+
+			.filter-row select:focus {
+				border-color: var(--accent);
+				outline: none;
+			}
+
+			#filteredList {
+				margin-top: 20px;
+			}
+
+			.filter-item {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				padding: 12px 16px;
+				margin-bottom: 8px;
+				background: var(--input-bg);
+				border: 1px solid var(--input-border);
+				border-radius: 8px;
+			}
+
+			.filter-item button {
+				background: #f4212e;
+				color: #fff;
+				border: none;
+				border-radius: 4px;
+				padding: 4px 8px;
+				font-size: 14px;
+				cursor: pointer;
+			}
+
+			.filter-item button:hover {
+				background: #d81e28;
 			}
 
 			.import-row {
@@ -158,162 +288,256 @@
 				flex-wrap: wrap;
 				gap: 12px;
 				align-items: center;
-				margin-top: 12px;
+				margin-top: 20px;
 			}
 
 			.import-row input[type="file"] {
-				font-size: 0.9rem;
+				font-size: 15px;
+				color: var(--text);
 			}
 
 			#status {
 				min-height: 1.25em;
-				margin-top: 12px;
+				margin-top: 16px;
 				font-weight: 500;
+				color: var(--text);
 			}
 
 			.stats-grid {
 				display: grid;
-				grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-				gap: 16px;
-				margin-top: 16px;
+				grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+				gap: 20px;
+				margin-bottom: 32px;
 			}
 
 			.stats-card {
-				background: rgba(231, 233, 234, 0.05);
-				border: 1px solid rgba(139, 152, 165, 0.2);
+				background: var(--input-bg);
+				border: 1px solid var(--input-border);
 				border-radius: 16px;
-				padding: 16px;
+				padding: 20px;
 			}
 
 			.stats-card h3 {
-				margin: 0 0 6px;
-				font-size: 0.95rem;
+				margin: 0 0 8px;
+				font-size: 14px;
 				color: var(--muted);
 				text-transform: uppercase;
 				letter-spacing: 0.05em;
+				font-weight: 500;
 			}
 
 			.stats-card strong {
-				font-size: 1.6rem;
+				font-size: 24px;
+				color: var(--text);
+				font-weight: 700;
 			}
 
 			#locationBreakdown {
-				margin: 12px 0 0;
+				margin: 0;
 				padding: 0;
 				list-style: none;
-				font-weight: 500;
 			}
 
 			#locationBreakdown li {
 				display: flex;
 				justify-content: space-between;
-				padding: 6px 0;
-				border-bottom: 1px solid rgba(139, 152, 165, 0.2);
+				padding: 8px 0;
+				border-bottom: 1px solid var(--border);
+				color: var(--text);
+				font-size: 15px;
 			}
 
 			#locationBreakdown li:last-child {
 				border-bottom: none;
 			}
+
+			.footer {
+				border-top: 1px solid var(--border);
+				padding: 20px 32px;
+				text-align: center;
+				color: var(--muted);
+				font-size: 14px;
+			}
 		</style>
 	</head>
 
 	<body>
-		<main class="options-shell">
-			<h1>X Buddy Extension Options</h1>
-			<section class="section">
-				<h2>General</h2>
-				<br />
-				<label>
-					<input
-						type="checkbox"
-						id="debug" />
-					Enable Debug Mode
-				</label>
-				<div
-					id="autoScrollRow"
-					class="nested-option"
-					hidden>
-					<label>
-						<input
-							type="checkbox"
-							id="autoScroll" />
-						Enable Timeline Auto Scroll
-					</label>
-					<p class="option-note">Scrolls through 10 posts automatically, pauses for 2 minutes, and repeats.</p>
+		<div class="container">
+			<div class="sidebar">
+				<div class="sidebar-header">
+					<h2>X Buddy</h2>
 				</div>
-				<fieldset class="lookup-mode">
-					<legend>Location Lookup Mode</legend>
-					<div class="radio-group">
-						<label class="radio-pill">
-							<input
-								type="radio"
-								name="lookupMode"
-								value="hover"
-								checked />
-							On Post Hover (default)
-						</label>
-						<label class="radio-pill">
-							<input
-								type="radio"
-								name="lookupMode"
-								value="auto" />
-							Auto Fetch
-						</label>
-						<label class="radio-pill">
-							<input
-								type="radio"
-								name="lookupMode"
-								value="menu" />
-							Menu Flag Button
-						</label>
+				<a
+					href="#"
+					class="nav-link active"
+					data-section="general"
+					>General</a
+				>
+				<a
+					href="#"
+					class="nav-link"
+					data-section="filtering"
+					>Filtering</a
+				>
+				<a
+					href="#"
+					class="nav-link"
+					data-section="statistics"
+					>Statistics</a
+				>
+				<a
+					href="#"
+					class="nav-link"
+					data-section="export-import"
+					>Export/Import</a
+				>
+			</div>
+			<div class="main">
+				<div class="main-content">
+					<div
+						id="general"
+						class="section-content active">
+						<div class="main-header">
+							<h1>General</h1>
+							<p>Configure basic extension settings and behavior.</p>
+						</div>
+						<div class="section">
+							<label>
+								<input
+									type="checkbox"
+									id="debug" />
+								<div>
+									<div style="font-weight: 600">Enable Debug Mode</div>
+									<div class="option-note">Shows additional logging information in the console.</div>
+								</div>
+							</label>
+							<div
+								id="autoScrollRow"
+								class="nested-option"
+								hidden>
+								<label>
+									<input
+										type="checkbox"
+										id="autoScroll" />
+									<div>
+										<div style="font-weight: 600">Enable Timeline Auto Scroll</div>
+										<div class="option-note">Scrolls through 10 posts automatically, pauses for 2 minutes, and repeats.</div>
+									</div>
+								</label>
+							</div>
+							<fieldset class="lookup-mode">
+								<legend>Location Lookup Mode</legend>
+								<div class="radio-group">
+									<label class="radio-pill">
+										<input
+											type="radio"
+											name="lookupMode"
+											value="hover"
+											checked />
+										<div>
+											<div style="font-weight: 600">On Post Hover (default)</div>
+											<div class="option-note">Only fetches new profiles when you hover over a post.</div>
+										</div>
+									</label>
+									<label class="radio-pill">
+										<input
+											type="radio"
+											name="lookupMode"
+											value="auto" />
+										<div>
+											<div style="font-weight: 600">Auto Fetch</div>
+											<div class="option-note">Continuously looks up locations for highlighted tweets.</div>
+										</div>
+									</label>
+									<label class="radio-pill">
+										<input
+											type="radio"
+											name="lookupMode"
+											value="menu" />
+										<div>
+											<div style="font-weight: 600">Menu Flag Button</div>
+											<div class="option-note">Adds a flag button next to Grok/More for manual lookups.</div>
+										</div>
+									</label>
+								</div>
+							</fieldset>
+							<div>
+								<button id="save">Save Settings</button>
+							</div>
+						</div>
 					</div>
-					<p style="margin: 12px 0 0; color: var(--muted); font-size: 0.9rem">
-						Hover mode only fetches new profiles when you hover a post, Auto fetch continuously looks up highlighted tweets, and Menu click adds a flag button next to Grok/More for manual lookups.
-					</p>
-				</fieldset>
-				<div>
-					<button id="save">Save</button>
-				</div>
-			</section>
 
-			<section class="section">
-				<h2>Location Cache</h2>
-				<p>Download the stored usernames and locations or sync new entries from a CSV file.</p>
-				<button id="exportCsv">Export CSV</button>
-				<div class="import-row">
-					<label for="importCsv">Import CSV:</label>
-					<input
-						type="file"
-						id="importCsv"
-						accept=".csv,text/csv" />
-					<button id="importCsvButton">Sync</button>
-				</div>
-				<p
-					id="status"
-					role="status"></p>
-			</section>
-
-			<section
-				class="section"
-				aria-live="polite">
-				<h2>Stats</h2>
-				<div class="stats-grid">
-					<div class="stats-card">
-						<h3>Total Entries</h3>
-						<strong id="totalEntries">0</strong>
+					<div
+						id="filtering"
+						class="section-content">
+						<div class="main-header">
+							<h1>Content Filtering</h1>
+							<p>Hide posts from specific countries based on user location.</p>
+						</div>
+						<div class="section">
+							<p>Select a location from the dropdown and click "Add Filter" to hide posts from that country.</p>
+							<div class="filter-row">
+								<select id="locationSelect">
+									<option value="">Select a location...</option>
+								</select>
+								<button id="addFilter">Add Filter</button>
+							</div>
+							<div id="filteredList"></div>
+						</div>
 					</div>
-					<div class="stats-card">
-						<h3>Unique Locations</h3>
-						<strong id="uniqueLocations">0</strong>
+
+					<div
+						id="statistics"
+						class="section-content">
+						<div class="main-header">
+							<h1>Statistics</h1>
+							<p>View cache statistics and location data.</p>
+						</div>
+						<div class="section">
+							<div class="stats-grid">
+								<div class="stats-card">
+									<h3>Total Entries</h3>
+									<strong id="totalEntries">0</strong>
+								</div>
+								<div class="stats-card">
+									<h3>Unique Locations</h3>
+									<strong id="uniqueLocations">0</strong>
+								</div>
+							</div>
+							<h2>Location Breakdown</h2>
+							<ul id="locationBreakdown"></ul>
+						</div>
+					</div>
+
+					<div
+						id="export-import"
+						class="section-content">
+						<div class="main-header">
+							<h1>Export/Import</h1>
+							<p>Download or upload location cache data.</p>
+						</div>
+						<div class="section">
+							<p>Download the stored usernames and locations or sync new entries from a CSV file.</p>
+							<button id="exportCsv">Export CSV</button>
+							<div class="import-row">
+								<label for="importCsv">Import CSV:</label>
+								<input
+									type="file"
+									id="importCsv"
+									accept=".csv,text/csv" />
+								<button id="importCsvButton">Sync</button>
+							</div>
+							<p
+								id="status"
+								role="status"></p>
+						</div>
 					</div>
 				</div>
-				<ul id="locationBreakdown"></ul>
-			</section>
-
-			<section class="section">
-				<small>Developed By Justin Greer</small>
-			</section>
-		</main>
+			</div>
+		</div>
+		<div class="footer">
+			<small>Developed By Justin Greer</small>
+		</div>
 		<script src="options.js"></script>
 	</body>
 </html>

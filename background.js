@@ -13,7 +13,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 		handlePreviewRequest(message.username, sender?.tab)
 			.then((result) => sendResponse({ ok: true, source: result?.source || "lookup" }))
 			.catch((error) => {
-				console.error("X Buddy preview error", error);
+				console.error(`X Buddy preview error`, error);
 				sendResponse({ ok: false, error: error?.message || String(error) });
 			});
 		return true;
@@ -50,7 +50,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
 	const username = pendingScrapes.get(tabId);
 	if (!username) return;
 
-	console.log(`X Buddy about page loaded for @${username}`);
+	// About page loaded
 	scrapeLocationFromAboutPage(tabId, username);
 });
 
@@ -59,6 +59,17 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 		pendingScrapes.delete(tabId);
 		previewTabId = null;
 		lastLoadedUsername = null;
+	}
+
+	// Clean up location listeners for closed tabs
+	for (const [username, listeners] of locationListeners) {
+		if (listeners.has(tabId)) {
+			// Cleaned up listener
+			listeners.delete(tabId);
+			if (listeners.size === 0) {
+				locationListeners.delete(username);
+			}
+		}
 	}
 });
 
@@ -197,7 +208,7 @@ async function scrapeLocationFromAboutPage(tabId, username) {
 		});
 
 		const location = result?.result ?? null;
-		console.log(`X Buddy location for @${username}: ${location ?? "(unknown)"}`);
+		// Location found
 		await persistLocation(username, location);
 		notifyLocationFound(username, location ?? null);
 	} catch (error) {
@@ -285,17 +296,38 @@ function notifyLocationFound(username, location) {
 	};
 
 	if (listeners && listeners.size > 0) {
-		listeners.forEach((tabId) => {
-			chrome.tabs.sendMessage(tabId, payload, () => {
-				if (chrome.runtime.lastError) {
-					console.warn(`X Buddy notify failed for tab ${tabId}`, chrome.runtime.lastError);
+		const promises = Array.from(listeners).map(async (tabId) => {
+			try {
+				// Check if tab still exists before sending message
+				await chrome.tabs.get(tabId);
+				return new Promise((resolve) => {
+					chrome.tabs.sendMessage(tabId, payload, () => {
+						if (chrome.runtime.lastError) {
+							// Suppress unchecked error
+						}
+						resolve();
+					});
+				});
+			} catch (error) {
+				// Tab doesn't exist, remove it from listeners
+				listeners.delete(tabId);
+				if (listeners.size === 0) {
+					locationListeners.delete(username);
 				}
-			});
+				return Promise.resolve();
+			}
 		});
-		locationListeners.delete(username);
+
+		Promise.allSettled(promises).then(() => {
+			locationListeners.delete(username);
+		});
 	} else if (location) {
 		// Allow cache-only responses even without active listeners.
-		chrome.runtime.sendMessage?.(payload, () => {});
+		chrome.runtime.sendMessage?.(payload, () => {
+			if (chrome.runtime.lastError) {
+				// Suppress unchecked error
+			}
+		});
 	}
 }
 
