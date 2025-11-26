@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+-   Location history tracking: Store historical location changes for accounts with timestamps
+-   History tab in options page: View location change history for all accounts
+-   Enhanced export/import: Export and import all settings, locations, and history as JSON
+
+### Changed
+
+-   Export/Import functionality now uses JSON format instead of CSV for complete data backup
+-   Statistics now handle both old and new location cache formats
+
 ## 1.0.0
 
 ### Added
@@ -52,3 +65,10 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 -   Minor errors and over logging
+
+## 1.5.2
+
+### Added
+
+-   Tracking of Location History. View history of locations for an account.
+-   Ability to contribute and participate in a global database.

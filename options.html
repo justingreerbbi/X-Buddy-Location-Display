@@ -391,6 +391,12 @@
 					data-section="export-import"
 					>Export/Import</a
 				>
+				<a
+					href="#"
+					class="nav-link"
+					data-section="history"
+					>History</a
+				>
 			</div>
 			<div class="main">
 				<div class="main-content">
@@ -514,22 +520,34 @@
 						class="section-content">
 						<div class="main-header">
 							<h1>Export/Import</h1>
-							<p>Download or upload location cache data.</p>
+							<p>Download or upload all settings and location data.</p>
 						</div>
 						<div class="section">
-							<p>Download the stored usernames and locations or sync new entries from a CSV file.</p>
-							<button id="exportCsv">Export CSV</button>
+							<p>Download all extension settings, locations, and history or import from a backup file.</p>
+							<button id="exportCsv">Export Settings</button>
 							<div class="import-row">
-								<label for="importCsv">Import CSV:</label>
+								<label for="importCsv">Import Settings:</label>
 								<input
 									type="file"
 									id="importCsv"
-									accept=".csv,text/csv" />
-								<button id="importCsvButton">Sync</button>
+									accept=".json,application/json" />
+								<button id="importCsvButton">Import</button>
 							</div>
 							<p
 								id="status"
 								role="status"></p>
+						</div>
+					</div>
+
+					<div
+						id="history"
+						class="section-content">
+						<div class="main-header">
+							<h1>History</h1>
+							<p>View location change history for accounts.</p>
+						</div>
+						<div class="section">
+							<ul id="history-list"></ul>
 						</div>
 					</div>
 				</div>

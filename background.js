@@ -253,10 +253,30 @@ async function persistLocation(username, location) {
 	try {
 		const existing = await storageGet(LOCATION_STORAGE_KEY);
 		const cache = existing?.[LOCATION_STORAGE_KEY] || {};
-		cache[username] = {
-			location,
-			timestamp: Date.now(),
-		};
+		const currentEntry = cache[username];
+
+		// Migrate old format to new format if necessary
+		if (currentEntry && !currentEntry.locations) {
+			cache[username] = {
+				locations: [{ location: currentEntry.location, timestamp: currentEntry.timestamp }],
+				current: currentEntry.location,
+			};
+		}
+
+		const entry = cache[username] || { locations: [], current: null };
+
+		// If location changed, add to history
+		if (entry.current !== location) {
+			entry.locations.push({ location, timestamp: Date.now() });
+			entry.current = location;
+		} else {
+			// Update timestamp of last entry if same location
+			if (entry.locations.length > 0) {
+				entry.locations[entry.locations.length - 1].timestamp = Date.now();
+			}
+		}
+
+		cache[username] = entry;
 		await storageSet({ [LOCATION_STORAGE_KEY]: cache });
 	} catch (error) {
 		console.error("X Buddy failed to persist location cache", error);
@@ -267,7 +287,21 @@ async function getCachedLocation(username) {
 	try {
 		const existing = await storageGet(LOCATION_STORAGE_KEY);
 		const cache = existing?.[LOCATION_STORAGE_KEY] || {};
-		return cache[username] || null;
+		const entry = cache[username];
+		if (!entry) return null;
+
+		// Migrate old format if necessary
+		if (!entry.locations) {
+			entry.locations = [{ location: entry.location, timestamp: entry.timestamp }];
+			entry.current = entry.location;
+			delete entry.location; // optional, but clean up
+		}
+
+		return {
+			location: entry.current,
+			timestamp: entry.locations[entry.locations.length - 1]?.timestamp || 0,
+			history: entry.locations,
+		};
 	} catch (error) {
 		console.error("X Buddy failed to read location cache", error);
 		return null;
