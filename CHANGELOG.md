@@ -71,4 +71,4 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 -   Tracking of Location History. View history of locations for an account.
--   Ability to contribute and participate in a global database.
+-   Support for multiple country flags based on location mapping
