@@ -539,38 +539,35 @@ function updateLocationDisplays(username, location) {
 
 function renderLocationTag(tweet, location) {
 	if (!location) return;
-	const nameContainer = tweet.querySelector('[data-testid="User-Name"]');
-	if (!nameContainer) return;
+	// Find the tweet text container (post content)
+	const postContent = tweet.querySelector('[data-testid="tweetText"]');
+	if (!postContent) return;
 
-	const primaryNameRow = nameContainer.querySelector("div:first-child");
-	const insertionTarget = primaryNameRow || nameContainer;
+	// Remove any existing tag
+	let tag = tweet.querySelector(".xbuddy-location-tag");
+	if (tag) tag.remove();
 
-	let tag = insertionTarget.querySelector(".xbuddy-location-tag");
-	if (!tag) {
-		tag = document.createElement("span");
-		tag.className = "xbuddy-location-tag";
-		tag.style.cssText = ["display:inline-flex", "align-items:center", "gap:4px", "margin-left:6px", "font-size:14px", "color:rgb(113,118,123)", "font-weight:500", "white-space:nowrap"].join(";");
-		insertionTarget.appendChild(tag);
-	}
+	// Create a new block element for the location
+	tag = document.createElement("div");
+	tag.className = "xbuddy-location-tag";
+	tag.style.cssText = ["display:flex", "align-items:center", "gap:6px", "margin: 2px 0 4px 0", "font-size:14px", "color:rgb(113,118,123)", "font-weight:500", "white-space:nowrap"].join(";");
 
 	const { labelText, flagSrc } = resolveLocationDisplay(location);
 
-	tag.textContent = "";
+	const textNode = document.createElement("span");
+	textNode.textContent = "Account based in " + labelText.replace(/\b\w/g, (l) => l.toUpperCase());
+	tag.appendChild(textNode);
 
 	if (flagSrc) {
-		let flagImg = tag.querySelector("img");
-		if (!flagImg) {
-			flagImg = document.createElement("img");
-			flagImg.alt = "";
-			flagImg.style.cssText = ["width:14px", "height:14px", "border-radius:2px", "object-fit:cover"].join(";");
-			tag.appendChild(flagImg);
-		}
+		const flagImg = document.createElement("img");
+		flagImg.alt = "";
+		flagImg.style.cssText = ["width:16px", "height:16px", "border-radius:2px", "object-fit:cover"].join(";");
 		flagImg.src = flagSrc;
+		tag.appendChild(flagImg);
 	}
 
-	const textNode = document.createElement("span");
-	textNode.textContent = `| ${labelText}`;
-	tag.appendChild(textNode);
+	// Insert the location tag just above the post content
+	postContent.parentNode.insertBefore(tag, postContent);
 }
 
 function resolveLocationDisplay(location) {
@@ -584,7 +581,7 @@ function resolveLocationDisplay(location) {
 }
 
 function ensureLocationForUsername(username) {
-	if (!username || pendingLocationLookups.has(username) || usernameLocations.has(username)) return;
+	if (!username || pendingLocationLookups.has(username)) return;
 	pendingLocationLookups.add(username);
 	chrome.runtime.sendMessage({ type: "xbuddy:get-location", username }, (response) => {
 		pendingLocationLookups.delete(username);
@@ -593,10 +590,16 @@ function ensureLocationForUsername(username) {
 			return;
 		}
 		if (!response?.ok) return;
-		const location = response.location || null;
-		if (location) {
-			usernameLocations.set(username, location);
-			updateLocationDisplays(username, location);
+		const cached = response.cached;
+		const now = Date.now();
+		const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+		if (cached && cached.location && cached.timestamp && now - cached.timestamp < thirtyDaysMs) {
+			// Use cached location
+			usernameLocations.set(username, cached.location);
+			updateLocationDisplays(username, cached.location);
+		} else {
+			// Fetch new location
+			requestPreviewWindow(username);
 		}
 	});
 }
