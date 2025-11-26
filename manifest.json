@@ -1,7 +1,7 @@
 {
 	"manifest_version": 3,
 	"name": "X Buddy Extension",
-	"version": "1.5.0",
+	"version": "1.5.1",
 	"description": "Displays user location on X.com profiles by fetching from the about page.",
 	"permissions": ["activeTab", "storage", "tabs", "scripting"],
 	"host_permissions": ["https://x.com/*"],
