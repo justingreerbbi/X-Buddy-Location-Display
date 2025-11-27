@@ -83,8 +83,10 @@ document.addEventListener("DOMContentLoaded", () => {
 		locationSelect.innerHTML = '<option value="">Select a location...</option>';
 		const locations = new Set();
 		Object.values(cache).forEach((entry) => {
-			if (entry && entry.location) {
-				locations.add(entry.location);
+			// Handle both old and new cache formats
+			const location = entry?.current || entry?.location;
+			if (location) {
+				locations.add(location);
 			}
 		});
 		const sortedLocations = Array.from(locations).sort();

@@ -43,15 +43,19 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 	}
 });
 
-browser.tabs.onUpdated.addListener((tabId, changeInfo) => {
+browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 	if (tabId !== previewTabId) return;
-	if (changeInfo.status !== "complete") return;
 
 	const username = pendingScrapes.get(tabId);
 	if (!username) return;
 
-	// About page loaded
-	scrapeLocationFromAboutPage(tabId, username);
+	const expectedUrl = `https://x.com/${encodeURIComponent(username)}/about`;
+
+	// Check if tab is complete and has the correct URL
+	if (changeInfo.status === "complete" && tab.url === expectedUrl) {
+		// About page loaded with correct URL
+		scrapeLocationFromAboutPage(tabId, username);
+	}
 });
 
 browser.tabs.onRemoved.addListener((tabId) => {
@@ -122,6 +126,9 @@ async function ensureBackgroundTab(username, preferredWindowId) {
 
 async function scrapeLocationFromAboutPage(tabId, username) {
 	try {
+		// Wait a bit for page to fully load
+		await new Promise((resolve) => setTimeout(resolve, 1000));
+
 		const [result] = await browser.scripting.executeScript({
 			target: { tabId },
 			func: () => {
@@ -229,9 +236,16 @@ async function queueOrRunScrape(tabId, username) {
 
 	try {
 		const tab = await getTab(tabId);
-		if (tab?.status === "complete") {
+		const expectedUrl = `https://x.com/${encodeURIComponent(username)}/about`;
+
+		if (tab?.status === "complete" && tab?.url === expectedUrl) {
 			scrapeLocationFromAboutPage(tabId, username);
+		} else if (tab?.status === "complete" && tab?.url !== expectedUrl) {
+			// Tab loaded but wrong URL, wait a bit and retry
+			console.log(`X Buddy tab not ready yet, status: ${tab.status}, url: ${tab.url}, expected: ${expectedUrl}`);
+			setTimeout(() => queueOrRunScrape(tabId, username), 500);
 		}
+		// If tab is still loading, the tab update listener will handle it
 	} catch (error) {
 		console.warn("X Buddy could not inspect preview tab yet", error);
 	}
