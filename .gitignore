@@ -2,3 +2,5 @@
 .venv
 .gitattributes
 .DS_Store
+release/
+release/

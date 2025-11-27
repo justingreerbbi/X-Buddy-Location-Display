@@ -79,6 +79,10 @@ def should_exclude(file_path):
 def create_extension_archive(browser):
     """Create ZIP archive of the extension for the specified browser."""
     try:
+        # Create release directory if it doesn't exist (in root)
+        release_dir = "release"
+        os.makedirs(release_dir, exist_ok=True)
+        
         # Change to browser directory
         browser_path = Path(browser)
         if not browser_path.exists():
@@ -96,8 +100,8 @@ def create_extension_archive(browser):
         # Create browser directory if not exists
         os.makedirs(browser, exist_ok=True)
         
-        # Create archive filename with browser prefix
-        archive_name = f"{browser}/{name}-{version}.zip"
+        # Create archive filename in release directory with browser prefix
+        archive_name = f"{release_dir}/{name}-{browser}-{version}.zip"
         
         print(f"Creating {browser} extension archive: {archive_name}")
         
