@@ -5,8 +5,9 @@ Creates ZIP archives of browser extensions with proper naming and exclusions.
 Supports multiple browser types (Chrome, Firefox, etc.)
 
 Usage:
-    python package.py                    # Package Chrome extension
-    python package.py --browser firefox  # Package Firefox extension
+    python package.py                    # Package all browser extensions (chrome, firefox)
+    python package.py --browser chrome   # Package Chrome extension only
+    python package.py --browser firefox  # Package Firefox extension only
 
 The script expects extension files to be organized in subdirectories by browser type:
 - chrome/ for Chrome extensions
@@ -75,11 +76,6 @@ def should_exclude(file_path):
         
     return False
 
-def get_browser_type(args_browser=None):
-    """Determine the browser type for this extension."""
-    # Use command line argument if provided, otherwise default to chrome
-    return args_browser or "chrome"
-
 def create_extension_archive(browser):
     """Create ZIP archive of the extension for the specified browser."""
     try:
@@ -147,24 +143,44 @@ def create_extension_archive(browser):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Package browser extensions")
-    parser.add_argument("--browser", "-b", default="chrome", 
-                       help="Browser type (chrome, firefox, etc.)")
+    parser.add_argument("--browser", "-b", 
+                       help="Browser type (chrome, firefox, etc.). If not specified, packages all available browsers.")
     args = parser.parse_args()
     
     print("Browser Extension Packager")
     print("=" * 40)
     
-    browser = get_browser_type(args.browser)
-    
-    # Check if browser directory and manifest.json exist
-    browser_path = Path(browser)
-    manifest_path = browser_path / 'manifest.json'
-    if not browser_path.exists():
-        print(f"Error: Browser directory '{browser}' not found")
-        sys.exit(1)
-    if not manifest_path.exists():
-        print(f"Error: manifest.json not found in '{browser}' directory")
-        print("Please ensure the extension files are in the correct browser subdirectory")
-        sys.exit(1)
-    
-    create_extension_archive(browser)
+    if args.browser:
+        # Package specific browser
+        browser = args.browser
+        browser_path = Path(browser)
+        manifest_path = browser_path / 'manifest.json'
+        if not browser_path.exists():
+            print(f"Error: Browser directory '{browser}' not found")
+            sys.exit(1)
+        if not manifest_path.exists():
+            print(f"Error: manifest.json not found in '{browser}' directory")
+            print("Please ensure the extension files are in the correct browser subdirectory")
+            sys.exit(1)
+        
+        create_extension_archive(browser)
+    else:
+        # Package all available browsers
+        available_browsers = ['chrome', 'firefox']
+        packaged_count = 0
+        
+        for browser in available_browsers:
+            browser_path = Path(browser)
+            manifest_path = browser_path / 'manifest.json'
+            if browser_path.exists() and manifest_path.exists():
+                print(f"\n--- Packaging {browser} extension ---")
+                create_extension_archive(browser)
+                packaged_count += 1
+            else:
+                print(f"Skipping {browser}: directory or manifest not found")
+        
+        if packaged_count == 0:
+            print("Error: No valid browser extensions found to package")
+            sys.exit(1)
+        
+        print(f"\nSuccessfully packaged {packaged_count} browser extension(s)")
