@@ -7,8 +7,7 @@
 	"host_permissions": ["https://x.com/*"],
 	"options_page": "options.html",
 	"background": {
-		"service_worker": "background.js",
-		"type": "module"
+		"scripts": ["background.js"]
 	},
 	"content_scripts": [
 		{
@@ -25,8 +24,8 @@
 	],
 	"browser_specific_settings": {
 		"gecko": {
-			"id": "xbuddy-extension@justingreerbbi.github.io",
-			"strict_min_version": "102.0"
+			"id": "x-buddy-location-display@firefox.local",
+			"strict_min_version": "109.0"
 		}
 	}
 }

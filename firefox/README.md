@@ -17,7 +17,7 @@ A Firefox browser extension that displays the location of X.com users next to th
 4. Click "Load Temporary Add-on" and select the `manifest.json` file from this folder.
 5. The extension should now be installed and active.
 
-Note: For permanent installation, you can package the extension and install it as a .xpi file.
+Note: This Firefox version uses a background page instead of service worker for better compatibility.
 
 ## Usage
 
