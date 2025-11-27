@@ -1,6 +1,6 @@
 # X Buddy Extension
 
-A Chrome browser extension that displays the location of X.com users next to their usernames in the timeline.
+A Firefox browser extension that displays the location of X.com users next to their usernames in the timeline.
 
 ## Features
 
@@ -12,10 +12,12 @@ A Chrome browser extension that displays the location of X.com users next to the
 ## Installation
 
 1. Download or clone this repository.
-2. Open Chrome and go to `chrome://extensions/`.
-3. Enable "Developer mode" in the top right corner.
-4. Click "Load unpacked" and select the folder containing this extension.
+2. Open Firefox and go to `about:debugging`.
+3. Click "This Firefox" in the left sidebar.
+4. Click "Load Temporary Add-on" and select the `manifest.json` file from this folder.
 5. The extension should now be installed and active.
+
+Note: For permanent installation, you can package the extension and install it as a .xpi file.
 
 ## Usage
 
@@ -38,12 +40,28 @@ There are more options planned. For now, I am just trying to get the code base s
 -   Uses background windows to fetch the information which is then passed back to the main window. It is also important to note that a new window will open to load the data and then will close.
 -   The timeline updates and the results are stored for faster loading in the future.
 
-## Notes
+## Development
 
--   The extension assumes the location is formatted as "Account based in; [location]" on the about page.
--   If the location is not found, nothing happens.
--   Absolutely no external hooks are allowed.
--   I will try to maintain the plugin but if you want to help, send a PR! I would greatly appreciate it.
+### Packaging
+
+To package the extension for distribution:
+
+1. Ensure you're in the repository root directory
+2. Run the packager script:
+
+```bash
+python package.py
+```
+
+This will create a ZIP file in the `chrome/` directory containing the packaged extension.
+
+For other browsers (when supported):
+
+```bash
+python package.py --browser firefox
+```
+
+The packager automatically excludes development files and creates a clean distribution archive.
 
 ## Permissions
 

@@ -1,13 +1,26 @@
 #!/usr/bin/env python3
 """
-Chrome Extension Packager
-Creates a ZIP archive of the Chrome extension with proper naming and exclusions.
+Browser Extension Packager
+Creates ZIP archives of browser extensions with proper naming and exclusions.
+Supports multiple browser types (Chrome, Firefox, etc.)
+
+Usage:
+    python package.py                    # Package Chrome extension
+    python package.py --browser firefox  # Package Firefox extension
+
+The script expects extension files to be organized in subdirectories by browser type:
+- chrome/ for Chrome extensions
+- firefox/ for Firefox extensions
+- etc.
+
+ZIP files are created within their respective browser directories.
 """
 
 import os
 import json
 import zipfile
 import sys
+import argparse
 from pathlib import Path
 
 def get_manifest_info():
@@ -62,25 +75,44 @@ def should_exclude(file_path):
         
     return False
 
-def create_extension_archive():
-    """Create ZIP archive of the Chrome extension."""
+def get_browser_type(args_browser=None):
+    """Determine the browser type for this extension."""
+    # Use command line argument if provided, otherwise default to chrome
+    return args_browser or "chrome"
+
+def create_extension_archive(browser):
+    """Create ZIP archive of the extension for the specified browser."""
     try:
+        # Change to browser directory
+        browser_path = Path(browser)
+        if not browser_path.exists():
+            print(f"Error: Browser directory '{browser}' not found")
+            sys.exit(1)
+        
+        os.chdir(browser_path)
+        
         # Get extension info from manifest
         name, version = get_manifest_info()
         
-        # Create archive filename
-        archive_name = f"{name}-{version}.zip"
+        # Go back to parent directory
+        os.chdir("..")
         
-        print(f"Creating archive: {archive_name}")
+        # Create browser directory if not exists
+        os.makedirs(browser, exist_ok=True)
         
-        # Get current directory
-        current_dir = Path.cwd()
+        # Create archive filename with browser prefix
+        archive_name = f"{browser}/{name}-{version}.zip"
+        
+        print(f"Creating {browser} extension archive: {archive_name}")
+        
+        # Change back to browser directory for packaging
+        os.chdir(browser_path)
         
         # Create ZIP file
-        with zipfile.ZipFile(archive_name, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        with zipfile.ZipFile(f"../{archive_name}", 'w', zipfile.ZIP_DEFLATED) as zipf:
             file_count = 0
             
-            # Walk through all files and directories
+            # Walk through all files and directories in browser directory
             for root, dirs, files in os.walk('.'):
                 # Remove excluded directories from dirs list to prevent traversal
                 dirs[:] = [d for d in dirs if not should_exclude(os.path.join(root, d))]
@@ -100,23 +132,39 @@ def create_extension_archive():
                     zipf.write(file_path, archive_path)
                     file_count += 1
                     print(f"Added: {archive_path}")
+        
+        # Go back to parent
+        os.chdir("..")
             
-            print(f"\nArchive created successfully!")
-            print(f"Files included: {file_count}")
-            print(f"Archive size: {os.path.getsize(archive_name)} bytes")
+        print(f"\nArchive created successfully!")
+        print(f"Files included: {file_count}")
+        print(f"Archive size: {os.path.getsize(archive_name)} bytes")
+        print(f"Archive location: {archive_name}")
             
     except Exception as e:
         print(f"Error creating archive: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":
-    print("Chrome Extension Packager")
+    parser = argparse.ArgumentParser(description="Package browser extensions")
+    parser.add_argument("--browser", "-b", default="chrome", 
+                       help="Browser type (chrome, firefox, etc.)")
+    args = parser.parse_args()
+    
+    print("Browser Extension Packager")
     print("=" * 40)
     
-    # Check if manifest.json exists
-    if not os.path.exists('manifest.json'):
-        print("Error: manifest.json not found in current directory")
-        print("Please run this script from the extension's root directory")
+    browser = get_browser_type(args.browser)
+    
+    # Check if browser directory and manifest.json exist
+    browser_path = Path(browser)
+    manifest_path = browser_path / 'manifest.json'
+    if not browser_path.exists():
+        print(f"Error: Browser directory '{browser}' not found")
+        sys.exit(1)
+    if not manifest_path.exists():
+        print(f"Error: manifest.json not found in '{browser}' directory")
+        print("Please ensure the extension files are in the correct browser subdirectory")
         sys.exit(1)
     
-    create_extension_archive()
+    create_extension_archive(browser)

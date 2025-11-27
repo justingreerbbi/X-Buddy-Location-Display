@@ -1,0 +1,32 @@
+{
+	"manifest_version": 3,
+	"name": "X Buddy Extension",
+	"version": "1.5.1",
+	"description": "X Buddy Extension enhances your X (formerly Twitter) experience by automatically showing the location of accounts based on their profile information. Perfect for understanding the geographic context of conversations and content without leaving the timeline.",
+	"permissions": ["activeTab", "storage", "tabs", "scripting"],
+	"host_permissions": ["https://x.com/*"],
+	"options_page": "options.html",
+	"background": {
+		"service_worker": "background.js",
+		"type": "module"
+	},
+	"content_scripts": [
+		{
+			"matches": ["https://x.com/*"],
+			"js": ["content.js"],
+			"run_at": "document_end"
+		}
+	],
+	"web_accessible_resources": [
+		{
+			"resources": ["assets/flags/*.svg"],
+			"matches": ["<all_urls>"]
+		}
+	],
+	"browser_specific_settings": {
+		"gecko": {
+			"id": "xbuddy-extension@justingreerbbi.github.io",
+			"strict_min_version": "102.0"
+		}
+	}
+}
