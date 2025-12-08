@@ -12,29 +12,30 @@ document.addEventListener("DOMContentLoaded", () => {
 	const navLinks = document.querySelectorAll(".nav-link");
 	const sectionContents = document.querySelectorAll(".section-content");
 
-	navLinks.forEach((link) => {
-		link.addEventListener("click", (e) => {
-			e.preventDefault();
-			const sectionName = link.getAttribute("data-section");
+	   navLinks.forEach((link) => {
+		   link.addEventListener("click", (e) => {
+			   e.preventDefault();
+			   const sectionName = link.getAttribute("data-section");
 
-			// Remove active class from all links and contents
-			navLinks.forEach((lnk) => lnk.classList.remove("active"));
-			sectionContents.forEach((content) => content.classList.remove("active"));
+			   // Remove active class from all links and contents
+			   navLinks.forEach((lnk) => lnk.classList.remove("active"));
+			   sectionContents.forEach((content) => content.classList.remove("active"));
 
-			// Add active class to clicked link and corresponding content
-			link.classList.add("active");
-			document.getElementById(sectionName).classList.add("active");
+			   // Add active class to clicked link and corresponding content
+			   link.classList.add("active");
+			   document.getElementById(sectionName).classList.add("active");
 
-			// Refresh content for specific tabs
-			if (sectionName === "statistics") {
-				refreshStats();
-			} else if (sectionName === "history") {
-				updateHistory().catch((error) => {
-					console.error("X Buddy history refresh failed", error);
-				});
-			}
-		});
-	});
+			   // Refresh content for specific tabs
+			   if (sectionName === "statistics") {
+				   refreshStats();
+			   } else if (sectionName === "history") {
+				   updateHistory().catch((error) => {
+					   console.error("X Buddy history refresh failed", error);
+				   });
+			   }
+			   // No special refresh needed for 'account' tab
+		   });
+	   });
 
 	const debugCheckbox = document.getElementById("debug");
 	const autoScrollCheckbox = document.getElementById("autoScroll");

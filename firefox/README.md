@@ -72,8 +72,10 @@ The packager automatically excludes development files and creates a clean distri
 
 ## ToDo's
 
--   Add filtering or whitelist/blacklist.
--   Add export so in the event that an update is ran, you can upload your list without building a new one.
+-   Central DB Sync. Syncing of locations.
+-   Flagging an account clearly engaged in out of country antics posing as something they are not.
+-   Fix the importing and exporting and split options from locations.
+-   Add data tables or something else for displaying location data in the options.
 
 ## Compatibility
 
