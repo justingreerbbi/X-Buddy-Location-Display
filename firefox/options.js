@@ -40,10 +40,6 @@ document.addEventListener("DOMContentLoaded", () => {
 	const autoScrollCheckbox = document.getElementById("autoScroll");
 	const autoScrollRow = document.getElementById("autoScrollRow");
 	const saveButton = document.getElementById("save");
-	const exportButton = document.getElementById("exportCsv");
-	const importInput = document.getElementById("importCsv");
-	const importButton = document.getElementById("importCsvButton");
-	const statusField = document.getElementById("status");
 	const totalEntriesField = document.getElementById("totalEntries");
 	const uniqueLocationsField = document.getElementById("uniqueLocations");
 	const breakdownList = document.getElementById("locationBreakdown");
@@ -102,12 +98,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	const saveFilteredLocations = () => {
 		browser.storage.sync.set({ [FILTERED_LOCATIONS_KEY]: Array.from(filteredLocations) });
-	};
-
-	const setStatus = (message, isError = false) => {
-		if (!statusField) return;
-		statusField.textContent = message || "";
-		statusField.style.color = isError ? "red" : "";
 	};
 
 	const getSelectedLookupMode = () => {
@@ -185,199 +175,8 @@ document.addEventListener("DOMContentLoaded", () => {
 		saveFilteredLocations();
 	});
 
-	exportButton?.addEventListener("click", async () => {
-		setStatus("Preparing settings export...");
-		try {
-			await exportSettingsJson();
-			setStatus("Settings exported successfully.");
-			refreshStats();
-		} catch (error) {
-			console.error("X Buddy export failed", error);
-			setStatus("Failed to export settings. See console for details.", true);
-		}
-	});
-
-	importButton?.addEventListener("click", async () => {
-		if (!importInput || !importInput.files?.length) {
-			setStatus("Choose a JSON file to import.", true);
-			return;
-		}
-
-		const [file] = importInput.files;
-		setStatus("Importing settings from JSON...");
-		try {
-			await importSettingsFromJson(file);
-			importInput.value = "";
-			setStatus("Settings imported successfully.");
-			refreshStats();
-			// Refresh the page to apply new settings
-			location.reload();
-		} catch (error) {
-			console.error("X Buddy import failed", error);
-			setStatus("Failed to import settings. See console for details.", true);
-		}
-	});
-
 	refreshStats();
 });
-
-async function exportSettingsJson() {
-	// Get sync options
-	const syncData = await new Promise((resolve) => {
-		browser.storage.sync.get(null, (data) => {
-			if (browser.runtime.lastError) {
-				resolve({});
-			} else {
-				resolve(data);
-			}
-		});
-	});
-
-	// Get local locations and migrate to new format
-	const rawLocations = await readLocationCache();
-	const locations = {};
-	for (const [username, entry] of Object.entries(rawLocations)) {
-		// Migrate old format to new format
-		if (entry && !entry.locations) {
-			locations[username] = {
-				locations: [{ location: entry.location, timestamp: entry.timestamp }],
-				current: entry.location,
-			};
-		} else {
-			locations[username] = entry;
-		}
-	}
-
-	const exportData = {
-		version: "1.0",
-		exportedAt: new Date().toISOString(),
-		options: syncData,
-		locations: locations,
-	};
-
-	const jsonContent = JSON.stringify(exportData, null, 2);
-	const blob = new Blob([jsonContent], { type: "application/json" });
-	const url = URL.createObjectURL(blob);
-	const downloadLink = document.createElement("a");
-	downloadLink.href = url;
-	const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-	downloadLink.download = `xbuddy-settings-${stamp}.json`;
-	downloadLink.click();
-	setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
-async function importSettingsFromJson(file) {
-	const text = await file.text();
-	let importData;
-	try {
-		importData = JSON.parse(text);
-	} catch (error) {
-		throw new Error("Invalid JSON file.");
-	}
-
-	if (!importData || typeof importData !== "object") {
-		throw new Error("Invalid import data structure.");
-	}
-
-	// Import options to sync storage
-	if (importData.options && typeof importData.options === "object") {
-		await new Promise((resolve, reject) => {
-			browser.storage.sync.set(importData.options, () => {
-				if (browser.runtime.lastError) {
-					reject(browser.runtime.lastError);
-				} else {
-					resolve();
-				}
-			});
-		});
-	}
-
-	// Import locations to local storage
-	if (importData.locations && typeof importData.locations === "object") {
-		await writeLocationCache(importData.locations);
-	}
-}
-
-function parseCsvRows(csvText) {
-	if (!csvText) return [];
-	const sanitized = csvText.replace(/^\uFEFF/, "");
-	const lines = sanitized.split(/\r?\n/).filter((line) => line.trim().length > 0);
-	if (!lines.length) return [];
-
-	const headerCells = splitCsvLine(lines[0]).map((cell) => cell.trim().toLowerCase());
-	const hasHeader = headerCells.includes("username");
-	const columnMap = {
-		username: hasHeader ? headerCells.indexOf("username") : 0,
-		location: hasHeader ? headerCells.indexOf("location") : 1,
-		timestamp: hasHeader ? headerCells.indexOf("timestamp") : 2,
-	};
-
-	const startIndex = hasHeader ? 1 : 0;
-	const rows = [];
-
-	for (let i = startIndex; i < lines.length; i += 1) {
-		const cells = splitCsvLine(lines[i]);
-		const username = columnMap.username >= 0 ? cells[columnMap.username] : cells[0];
-		if (!username || !username.trim()) continue;
-
-		const location = columnMap.location >= 0 ? cells[columnMap.location] : cells[1] || "";
-		const timestampRaw = columnMap.timestamp >= 0 ? cells[columnMap.timestamp] : cells[2] || "";
-		const timestamp = timestampRaw && timestampRaw.trim() ? Number(timestampRaw) : NaN;
-
-		rows.push({
-			username: username.trim(),
-			location: location?.trim() || "",
-			timestamp: Number.isFinite(timestamp) ? timestamp : NaN,
-		});
-	}
-
-	return rows;
-}
-
-function splitCsvLine(line) {
-	const values = [];
-	let current = "";
-	let inQuotes = false;
-
-	for (let i = 0; i < line.length; i += 1) {
-		const char = line[i];
-
-		if (char === '"') {
-			if (inQuotes && line[i + 1] === '"') {
-				current += '"';
-				i += 1;
-			} else {
-				inQuotes = !inQuotes;
-			}
-			continue;
-		}
-
-		if (char === "," && !inQuotes) {
-			values.push(current);
-			current = "";
-			continue;
-		}
-
-		current += char;
-	}
-
-	values.push(current);
-	return values;
-}
-
-function escapeCsvValue(value) {
-	const text = value == null ? "" : String(value);
-	if (text === "") return "";
-	if (/[",\n\r]/.test(text)) {
-		return `"${text.replace(/"/g, '""')}"`;
-	}
-	return text;
-}
-
-function normalizeUsername(raw) {
-	if (!raw) return "";
-	return raw.replace(/^@+/, "").trim();
-}
 
 function readLocationCache() {
 	return new Promise((resolve, reject) => {

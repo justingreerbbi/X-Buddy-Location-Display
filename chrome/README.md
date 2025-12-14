@@ -63,10 +63,9 @@ The packager automatically excludes development files and creates a clean distri
 
 ## Permissions
 
--   `activeTab`: Allows the extension to access the current tab for content script injection.
--   `storage`: For saving debug settings.
--   `tabs`: For finding loading location.
--   `scripting`: For ruining the logic and updating the location.
+-   `storage`: Persists preferences, auth tokens, and cached signatures.
+-   `tabs`: Lets the background worker open and manage the hidden profile preview tab.
+-   `scripting`: Injects the scraping helper into the preview tab’s context.
 
 ## ToDo's
 

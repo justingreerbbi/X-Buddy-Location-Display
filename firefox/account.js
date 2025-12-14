@@ -1,4 +1,4 @@
-// Account tab logic for X Buddy Chrome extension
+// Account tab logic for X Buddy Firefox extension
 
 const AUTH_STORAGE_KEY = "xbuddyAuth";
 const SIGNATURE_VERSION_KEY = "xbuddySignatureVersion";
@@ -56,9 +56,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	const readAuthState = () =>
 		new Promise((resolve) => {
-			chrome.storage.local.get([AUTH_STORAGE_KEY, "xbuddyUser"], (data) => {
-				if (chrome.runtime.lastError) {
-					console.warn("X Buddy auth read failed", chrome.runtime.lastError);
+			browser.storage.local.get([AUTH_STORAGE_KEY, "xbuddyUser"], (data) => {
+				if (browser.runtime.lastError) {
+					console.warn("X Buddy auth read failed", browser.runtime.lastError);
 					resolve(null);
 					return;
 				}
@@ -82,9 +82,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	const writeAuthState = (value) =>
 		new Promise((resolve) => {
-			chrome.storage.local.set({ [AUTH_STORAGE_KEY]: value }, () => {
-				if (chrome.runtime.lastError) {
-					console.error("X Buddy auth write failed", chrome.runtime.lastError);
+			browser.storage.local.set({ [AUTH_STORAGE_KEY]: value }, () => {
+				if (browser.runtime.lastError) {
+					console.error("X Buddy auth write failed", browser.runtime.lastError);
 				}
 				resolve();
 			});
@@ -92,9 +92,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	const clearAuthState = () =>
 		new Promise((resolve) => {
-			chrome.storage.local.remove(AUTH_STORAGE_KEY, () => {
-				if (chrome.runtime.lastError) {
-					console.error("X Buddy auth clear failed", chrome.runtime.lastError);
+			browser.storage.local.remove(AUTH_STORAGE_KEY, () => {
+				if (browser.runtime.lastError) {
+					console.error("X Buddy auth clear failed", browser.runtime.lastError);
 				}
 				resolve();
 			});
@@ -107,9 +107,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	function readLocationCache() {
 		return new Promise((resolve, reject) => {
-			chrome.storage.local.get(LOCATION_CACHE_KEY, (items) => {
-				if (chrome.runtime.lastError) {
-					reject(chrome.runtime.lastError);
+			browser.storage.local.get(LOCATION_CACHE_KEY, (items) => {
+				if (browser.runtime.lastError) {
+					reject(browser.runtime.lastError);
 					return;
 				}
 				resolve(items?.[LOCATION_CACHE_KEY] || {});
@@ -119,9 +119,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	function writeLocationCache(cache) {
 		return new Promise((resolve, reject) => {
-			chrome.storage.local.set({ [LOCATION_CACHE_KEY]: cache }, () => {
-				if (chrome.runtime.lastError) {
-					reject(chrome.runtime.lastError);
+			browser.storage.local.set({ [LOCATION_CACHE_KEY]: cache }, () => {
+				if (browser.runtime.lastError) {
+					reject(browser.runtime.lastError);
 					return;
 				}
 				resolve();
@@ -131,9 +131,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	const readSignatureVersionState = () =>
 		new Promise((resolve) => {
-			chrome.storage.local.get(SIGNATURE_VERSION_KEY, (data) => {
-				if (chrome.runtime.lastError) {
-					console.warn("X Buddy signature version read failed", chrome.runtime.lastError);
+			browser.storage.local.get(SIGNATURE_VERSION_KEY, (data) => {
+				if (browser.runtime.lastError) {
+					console.warn("X Buddy signature version read failed", browser.runtime.lastError);
 					resolve({ version: 0, lastSyncedAt: null });
 					return;
 				}
@@ -147,9 +147,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	const writeSignatureVersionState = (state) =>
 		new Promise((resolve) => {
-			chrome.storage.local.set({ [SIGNATURE_VERSION_KEY]: state }, () => {
-				if (chrome.runtime.lastError) {
-					console.error("X Buddy signature version write failed", chrome.runtime.lastError);
+			browser.storage.local.set({ [SIGNATURE_VERSION_KEY]: state }, () => {
+				if (browser.runtime.lastError) {
+					console.error("X Buddy signature version write failed", browser.runtime.lastError);
 				}
 				resolve();
 			});
@@ -552,7 +552,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	});
 
 	registerBtn?.addEventListener("click", () => {
-		chrome.tabs.create({ url: REGISTER_URL });
+		browser.tabs.create({ url: REGISTER_URL });
 	});
 
 	logoutBtn?.addEventListener("click", async (event) => {

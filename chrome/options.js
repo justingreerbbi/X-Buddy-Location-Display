@@ -6,44 +6,59 @@ const LOOKUP_MODE_VALUES = new Set(["hover", "auto", "menu"]);
 const DEBUG_KEY = "debug";
 const AUTO_SCROLL_KEY = "autoScroll";
 const FILTERED_LOCATIONS_KEY = "filteredLocations";
+const LOCATION_TABLE_PAGE_SIZE = 20;
+
+const locationTableState = {
+	allRows: [],
+	filteredRows: [],
+	page: 0,
+	searchTerm: "",
+};
+
+const locationTableElements = {
+	body: null,
+	searchInput: null,
+	countLabel: null,
+	pagination: null,
+};
 
 document.addEventListener("DOMContentLoaded", () => {
 	// Sidebar navigation functionality
 	const navLinks = document.querySelectorAll(".nav-link");
 	const sectionContents = document.querySelectorAll(".section-content");
 
-	   navLinks.forEach((link) => {
-		   link.addEventListener("click", (e) => {
-			   e.preventDefault();
-			   const sectionName = link.getAttribute("data-section");
+	navLinks.forEach((link) => {
+		link.addEventListener("click", (e) => {
+			e.preventDefault();
+			const sectionName = link.getAttribute("data-section");
 
-			   // Remove active class from all links and contents
-			   navLinks.forEach((lnk) => lnk.classList.remove("active"));
-			   sectionContents.forEach((content) => content.classList.remove("active"));
+			// Remove active class from all links and contents
+			navLinks.forEach((lnk) => lnk.classList.remove("active"));
+			sectionContents.forEach((content) => content.classList.remove("active"));
 
-			   // Add active class to clicked link and corresponding content
-			   link.classList.add("active");
-			   document.getElementById(sectionName).classList.add("active");
+			// Add active class to clicked link and corresponding content
+			link.classList.add("active");
+			document.getElementById(sectionName).classList.add("active");
 
-			   // Refresh content for specific tabs
-			   if (sectionName === "statistics") {
-				   refreshStats();
-			   } else if (sectionName === "history") {
-				   updateHistory().catch((error) => {
-					   console.error("X Buddy history refresh failed", error);
-				   });
-			   }
-			   // No special refresh needed for 'account' tab
-		   });
-	   });
+			// Refresh content for specific tabs
+			if (sectionName === "statistics") {
+				refreshStats();
+			} else if (sectionName === "history") {
+				updateHistory().catch((error) => {
+					console.error("X Buddy history refresh failed", error);
+				});
+			}
+			// No special refresh needed for 'account' tab
+		});
+	});
 
 	const debugCheckbox = document.getElementById("debug");
 	const autoScrollCheckbox = document.getElementById("autoScroll");
 	const autoScrollRow = document.getElementById("autoScrollRow");
 	const saveButton = document.getElementById("save");
-	const exportButton = document.getElementById("exportCsv");
-	const importInput = document.getElementById("importCsv");
-	const importButton = document.getElementById("importCsvButton");
+	const exportLocationsButton = document.getElementById("exportLocations");
+	const importLocationsInput = document.getElementById("importLocationsCsv");
+	const importLocationsButton = document.getElementById("importLocationsButton");
 	const statusField = document.getElementById("status");
 	const totalEntriesField = document.getElementById("totalEntries");
 	const uniqueLocationsField = document.getElementById("uniqueLocations");
@@ -52,6 +67,11 @@ document.addEventListener("DOMContentLoaded", () => {
 	const locationSelect = document.getElementById("locationSelect");
 	const addFilterButton = document.getElementById("addFilter");
 	const filteredList = document.getElementById("filteredList");
+	locationTableElements.body = document.querySelector("#locationTable tbody");
+	locationTableElements.searchInput = document.getElementById("locationSearch");
+	locationTableElements.countLabel = document.getElementById("locationCount");
+	locationTableElements.pagination = document.getElementById("locationPagination");
+	initialiseLocationTableControls();
 
 	let filteredLocations = new Set();
 	let locationCache = {};
@@ -128,11 +148,23 @@ document.addEventListener("DOMContentLoaded", () => {
 		});
 	};
 
+	const applyCacheToUi = (cache) => {
+		if (!cache) return;
+		populateLocationSelect(cache);
+		updateStatsFromCache(cache, totalEntriesField, uniqueLocationsField, breakdownList);
+		setLocationTableRows(convertCacheToRows(cache));
+	};
+
 	const refreshStats = () => {
 		if (!totalEntriesField || !uniqueLocationsField || !breakdownList) return;
-		updateStats(totalEntriesField, uniqueLocationsField, breakdownList).catch((error) => {
-			console.error("X Buddy stats refresh failed", error);
-		});
+		readLocationCache()
+			.then((cache) => {
+				locationCache = cache;
+				applyCacheToUi(cache);
+			})
+			.catch((error) => {
+				console.error("X Buddy stats refresh failed", error);
+			});
 	};
 
 	const updateAutoScrollVisibility = () => {
@@ -156,8 +188,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		// Get cache from local storage
 		chrome.storage.local.get([LOCATION_STORAGE_KEY], (localData) => {
 			locationCache = localData[LOCATION_STORAGE_KEY] || {};
-			populateLocationSelect(locationCache);
-			refreshStats(); // Refresh stats on load
+			applyCacheToUi(locationCache);
 		});
 		displayFilteredList();
 	});
@@ -186,74 +217,57 @@ document.addEventListener("DOMContentLoaded", () => {
 		saveFilteredLocations();
 	});
 
-	exportButton?.addEventListener("click", async () => {
-		setStatus("Preparing settings export...");
+	exportLocationsButton?.addEventListener("click", async () => {
+		setStatus("Preparing location history export...");
 		try {
-			await exportSettingsJson();
-			setStatus("Settings exported successfully.");
-			refreshStats();
+			await exportLocationHistoryJson();
+			setStatus("Location history exported successfully.");
 		} catch (error) {
 			console.error("X Buddy export failed", error);
-			setStatus("Failed to export settings. See console for details.", true);
+			setStatus("Failed to export location history. See console for details.", true);
 		}
 	});
 
-	importButton?.addEventListener("click", async () => {
-		if (!importInput || !importInput.files?.length) {
+	importLocationsButton?.addEventListener("click", async () => {
+		if (!importLocationsInput || !importLocationsInput.files?.length) {
 			setStatus("Choose a JSON file to import.", true);
 			return;
 		}
 
-		const [file] = importInput.files;
-		setStatus("Importing settings from JSON...");
+		const [file] = importLocationsInput.files;
+		setStatus("Importing location history from JSON...");
 		try {
-			await importSettingsFromJson(file);
-			importInput.value = "";
-			setStatus("Settings imported successfully.");
+			await importLocationHistoryFromJson(file);
+			importLocationsInput.value = "";
+			setStatus("Location history imported successfully.");
 			refreshStats();
-			// Refresh the page to apply new settings
-			location.reload();
 		} catch (error) {
 			console.error("X Buddy import failed", error);
-			setStatus("Failed to import settings. See console for details.", true);
+			setStatus("Failed to import location history. See console for details.", true);
 		}
 	});
 
 	refreshStats();
 });
 
-async function exportSettingsJson() {
-	// Get sync options
-	const syncData = await new Promise((resolve) => {
-		chrome.storage.sync.get(null, (data) => {
-			if (chrome.runtime.lastError) {
-				resolve({});
-			} else {
-				resolve(data);
-			}
-		});
-	});
-
-	// Get local locations and migrate to new format
+async function exportLocationHistoryJson() {
 	const rawLocations = await readLocationCache();
-	const locations = {};
+	const normalized = {};
 	for (const [username, entry] of Object.entries(rawLocations)) {
-		// Migrate old format to new format
 		if (entry && !entry.locations) {
-			locations[username] = {
+			normalized[username] = {
 				locations: [{ location: entry.location, timestamp: entry.timestamp }],
 				current: entry.location,
 			};
-		} else {
-			locations[username] = entry;
+			continue;
 		}
+		normalized[username] = entry;
 	}
 
 	const exportData = {
 		version: "1.0",
 		exportedAt: new Date().toISOString(),
-		options: syncData,
-		locations: locations,
+		locations: normalized,
 	};
 
 	const jsonContent = JSON.stringify(exportData, null, 2);
@@ -262,12 +276,12 @@ async function exportSettingsJson() {
 	const downloadLink = document.createElement("a");
 	downloadLink.href = url;
 	const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-	downloadLink.download = `xbuddy-settings-${stamp}.json`;
+	downloadLink.download = `xbuddy-location-history-${stamp}.json`;
 	downloadLink.click();
 	setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-async function importSettingsFromJson(file) {
+async function importLocationHistoryFromJson(file) {
 	const text = await file.text();
 	let importData;
 	try {
@@ -276,108 +290,11 @@ async function importSettingsFromJson(file) {
 		throw new Error("Invalid JSON file.");
 	}
 
-	if (!importData || typeof importData !== "object") {
-		throw new Error("Invalid import data structure.");
+	if (!importData || typeof importData !== "object" || typeof importData.locations !== "object") {
+		throw new Error("Invalid location history data.");
 	}
 
-	// Import options to sync storage
-	if (importData.options && typeof importData.options === "object") {
-		await new Promise((resolve, reject) => {
-			chrome.storage.sync.set(importData.options, () => {
-				if (chrome.runtime.lastError) {
-					reject(chrome.runtime.lastError);
-				} else {
-					resolve();
-				}
-			});
-		});
-	}
-
-	// Import locations to local storage
-	if (importData.locations && typeof importData.locations === "object") {
-		await writeLocationCache(importData.locations);
-	}
-}
-
-function parseCsvRows(csvText) {
-	if (!csvText) return [];
-	const sanitized = csvText.replace(/^\uFEFF/, "");
-	const lines = sanitized.split(/\r?\n/).filter((line) => line.trim().length > 0);
-	if (!lines.length) return [];
-
-	const headerCells = splitCsvLine(lines[0]).map((cell) => cell.trim().toLowerCase());
-	const hasHeader = headerCells.includes("username");
-	const columnMap = {
-		username: hasHeader ? headerCells.indexOf("username") : 0,
-		location: hasHeader ? headerCells.indexOf("location") : 1,
-		timestamp: hasHeader ? headerCells.indexOf("timestamp") : 2,
-	};
-
-	const startIndex = hasHeader ? 1 : 0;
-	const rows = [];
-
-	for (let i = startIndex; i < lines.length; i += 1) {
-		const cells = splitCsvLine(lines[i]);
-		const username = columnMap.username >= 0 ? cells[columnMap.username] : cells[0];
-		if (!username || !username.trim()) continue;
-
-		const location = columnMap.location >= 0 ? cells[columnMap.location] : cells[1] || "";
-		const timestampRaw = columnMap.timestamp >= 0 ? cells[columnMap.timestamp] : cells[2] || "";
-		const timestamp = timestampRaw && timestampRaw.trim() ? Number(timestampRaw) : NaN;
-
-		rows.push({
-			username: username.trim(),
-			location: location?.trim() || "",
-			timestamp: Number.isFinite(timestamp) ? timestamp : NaN,
-		});
-	}
-
-	return rows;
-}
-
-function splitCsvLine(line) {
-	const values = [];
-	let current = "";
-	let inQuotes = false;
-
-	for (let i = 0; i < line.length; i += 1) {
-		const char = line[i];
-
-		if (char === '"') {
-			if (inQuotes && line[i + 1] === '"') {
-				current += '"';
-				i += 1;
-			} else {
-				inQuotes = !inQuotes;
-			}
-			continue;
-		}
-
-		if (char === "," && !inQuotes) {
-			values.push(current);
-			current = "";
-			continue;
-		}
-
-		current += char;
-	}
-
-	values.push(current);
-	return values;
-}
-
-function escapeCsvValue(value) {
-	const text = value == null ? "" : String(value);
-	if (text === "") return "";
-	if (/[",\n\r]/.test(text)) {
-		return `"${text.replace(/"/g, '""')}"`;
-	}
-	return text;
-}
-
-function normalizeUsername(raw) {
-	if (!raw) return "";
-	return raw.replace(/^@+/, "").trim();
+	await writeLocationCache(importData.locations);
 }
 
 function readLocationCache() {
@@ -404,9 +321,8 @@ function writeLocationCache(cache) {
 	});
 }
 
-async function updateStats(totalEl, uniqueEl, listEl) {
-	const cache = await readLocationCache();
-	const entries = Object.entries(cache);
+function updateStatsFromCache(cache, totalEl, uniqueEl, listEl) {
+	const entries = Object.entries(cache || {});
 	totalEl.textContent = String(entries.length);
 
 	const counts = new Map();
@@ -469,7 +385,6 @@ async function updateHistory() {
 	}
 
 	entries.forEach(([username, info]) => {
-		// Handle both old and new formats
 		const locations = info?.locations || (info?.location ? [{ location: info.location, timestamp: info.timestamp }] : []);
 		const current = info?.current || info?.location || "";
 
@@ -498,7 +413,7 @@ async function updateHistory() {
 			.reverse()
 			.forEach((entry) => {
 				const histLi = document.createElement("li");
-				const date = new Date(entry.timestamp).toLocaleString();
+				const date = formatTimestamp(entry.timestamp);
 				histLi.textContent = `${entry.location || "None"} (${date})`;
 				historyDiv.appendChild(histLi);
 			});
@@ -506,4 +421,193 @@ async function updateHistory() {
 		li.appendChild(historyDiv);
 		historyList.appendChild(li);
 	});
+}
+
+function formatTimestamp(raw) {
+	if (raw == null) return "";
+	let date;
+	if (typeof raw === "number") {
+		date = new Date(raw);
+	} else {
+		const numeric = Number(raw);
+		if (Number.isFinite(numeric)) {
+			date = new Date(numeric);
+		} else {
+			date = new Date(raw);
+		}
+	}
+	if (Number.isNaN(date.getTime())) return "";
+	return date.toLocaleString();
+}
+
+function convertCacheToRows(cache) {
+	if (!cache || typeof cache !== "object") return [];
+	return Object.entries(cache)
+		.map(([username, info]) => {
+			const currentLocation = (info?.current || info?.location || "").trim();
+			let timestamp = null;
+			const history = Array.isArray(info?.locations) ? info.locations : [];
+			if (history.length) {
+				const latest = history[history.length - 1];
+				timestamp = parseTimestamp(latest?.timestamp);
+			}
+			if (timestamp == null) {
+				timestamp = parseTimestamp(info?.timestamp);
+			}
+			return {
+				username,
+				location: currentLocation,
+				timestamp,
+			};
+		})
+		.sort((a, b) => a.username.localeCompare(b.username));
+}
+
+function parseTimestamp(raw) {
+	if (raw == null) return null;
+	if (typeof raw === "number" && Number.isFinite(raw)) return raw;
+	const numeric = Number(raw);
+	if (Number.isFinite(numeric)) return numeric;
+	const date = new Date(raw);
+	if (!Number.isNaN(date.getTime())) return date.getTime();
+	return null;
+}
+
+function initialiseLocationTableControls() {
+	const searchEl = locationTableElements.searchInput;
+	if (searchEl) {
+		searchEl.addEventListener("input", (event) => {
+			locationTableState.searchTerm = event.target.value || "";
+			applyLocationTableSearch({ resetPage: true });
+		});
+	}
+
+	setLocationTableRows([]);
+}
+
+function setLocationTableRows(rows) {
+	locationTableState.allRows = Array.isArray(rows) ? rows : [];
+	locationTableState.searchTerm = locationTableElements.searchInput?.value || "";
+	applyLocationTableSearch({ resetPage: true });
+}
+
+function applyLocationTableSearch({ resetPage = false } = {}) {
+	const term = (locationTableState.searchTerm || "").trim().toLowerCase();
+	if (!term) {
+		locationTableState.filteredRows = [...locationTableState.allRows];
+	} else {
+		locationTableState.filteredRows = locationTableState.allRows.filter((row) => {
+			const username = row.username?.toLowerCase() || "";
+			const location = row.location?.toLowerCase() || "";
+			return username.includes(term) || location.includes(term);
+		});
+	}
+
+	const totalPages = locationTableState.filteredRows.length ? Math.ceil(locationTableState.filteredRows.length / LOCATION_TABLE_PAGE_SIZE) : 0;
+	if (resetPage) {
+		locationTableState.page = 0;
+	} else if (locationTableState.page >= totalPages && totalPages > 0) {
+		locationTableState.page = totalPages - 1;
+	}
+
+	renderLocationTable();
+}
+
+function renderLocationTable() {
+	const tbody = locationTableElements.body;
+	if (!tbody) return;
+
+	const rows = locationTableState.filteredRows;
+	const totalRows = rows.length;
+	const totalPages = totalRows ? Math.ceil(totalRows / LOCATION_TABLE_PAGE_SIZE) : 0;
+	if (locationTableState.page >= totalPages && totalPages > 0) {
+		locationTableState.page = totalPages - 1;
+	}
+	if (locationTableState.page < 0) {
+		locationTableState.page = 0;
+	}
+
+	const startIndex = totalRows ? locationTableState.page * LOCATION_TABLE_PAGE_SIZE : 0;
+	const visibleRows = rows.slice(startIndex, startIndex + LOCATION_TABLE_PAGE_SIZE);
+
+	body.innerHTML = "";
+
+	if (!visibleRows.length) {
+		const emptyRow = document.createElement("tr");
+		const emptyCell = document.createElement("td");
+		emptyCell.colSpan = 3;
+		emptyCell.textContent = totalRows === 0 ? "No entries found." : "No entries on this page.";
+		emptyCell.style.color = "var(--muted)";
+		emptyCell.style.textAlign = "center";
+		emptyCell.style.padding = "20px 16px";
+		emptyRow.appendChild(emptyCell);
+		tbody.appendChild(emptyRow);
+	} else {
+		visibleRows.forEach((row) => {
+			const tr = document.createElement("tr");
+			const usernameCell = document.createElement("td");
+			usernameCell.textContent = row.username || "—";
+			const locationCell = document.createElement("td");
+			locationCell.textContent = row.location || "—";
+			const timestampCell = document.createElement("td");
+			timestampCell.textContent = row.timestamp ? formatTimestamp(row.timestamp) : "—";
+			tr.append(usernameCell, locationCell, timestampCell);
+			tbody.appendChild(tr);
+		});
+	}
+
+	if (locationTableElements.countLabel) {
+		if (!totalRows) {
+			locationTableElements.countLabel.textContent = "No entries found";
+		} else {
+			const first = startIndex + 1;
+			const last = startIndex + visibleRows.length;
+			locationTableElements.countLabel.textContent = `Showing ${first}–${last} of ${totalRows} entries`;
+		}
+	}
+
+	updateLocationPagination(totalPages);
+}
+
+function updateLocationPagination(totalPages) {
+	const container = locationTableElements.pagination;
+	if (!container) return;
+	container.innerHTML = "";
+
+	if (!totalPages) {
+		const info = document.createElement("span");
+		info.className = "pagination-info";
+		info.textContent = "Page 0 of 0";
+		container.appendChild(info);
+		return;
+	}
+
+	const prevButton = document.createElement("button");
+	prevButton.type = "button";
+	prevButton.textContent = "Previous";
+	prevButton.disabled = locationTableState.page === 0;
+	prevButton.addEventListener("click", () => {
+		if (locationTableState.page > 0) {
+			locationTableState.page -= 1;
+			renderLocationTable();
+		}
+	});
+	container.appendChild(prevButton);
+
+	const info = document.createElement("span");
+	info.className = "pagination-info";
+	info.textContent = `Page ${locationTableState.page + 1} of ${totalPages}`;
+	container.appendChild(info);
+
+	const nextButton = document.createElement("button");
+	nextButton.type = "button";
+	nextButton.textContent = "Next";
+	nextButton.disabled = locationTableState.page >= totalPages - 1;
+	nextButton.addEventListener("click", () => {
+		if (locationTableState.page < totalPages - 1) {
+			locationTableState.page += 1;
+			renderLocationTable();
+		}
+	});
+	container.appendChild(nextButton);
 }

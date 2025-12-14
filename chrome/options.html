@@ -232,6 +232,10 @@
 				cursor: not-allowed;
 			}
 
+			#save {
+				margin-top: 16px;
+			}
+
 			.filter-row {
 				display: flex;
 				gap: 12px;
@@ -351,6 +355,111 @@
 				border-bottom: none;
 			}
 
+			.account-container {
+				background: var(--input-bg);
+				border: 1px solid var(--border);
+				border-radius: 16px;
+				padding: 20px;
+			}
+
+			.account-header {
+				font-size: 22px;
+				font-weight: 700;
+				margin: 0 0 6px;
+			}
+
+			.account-sub {
+				color: var(--muted);
+				margin: 0 0 16px;
+			}
+
+			.account-status {
+				margin: 0 0 12px;
+				font-weight: 600;
+			}
+
+			.account-status.error {
+				color: #f4212e;
+			}
+
+			.account-status.success {
+				color: var(--accent);
+			}
+
+			.account-form {
+				display: flex;
+				flex-direction: column;
+				gap: 12px;
+				margin: 0;
+			}
+
+			.account-form label {
+				display: flex;
+				flex-direction: column;
+				gap: 6px;
+				font-weight: 600;
+			}
+
+			.account-form input[type="email"],
+			.account-form input[type="password"] {
+				padding: 12px;
+				border-radius: 10px;
+				border: 1px solid var(--input-border);
+				background: var(--input-bg);
+				color: var(--text);
+				font-size: 15px;
+			}
+
+			.account-form input[type="email"]:focus,
+			.account-form input[type="password"]:focus {
+				outline: none;
+				border-color: var(--accent);
+			}
+
+			.account-actions {
+				display: flex;
+				gap: 12px;
+				flex-wrap: wrap;
+				align-items: center;
+				margin-top: 10px;
+			}
+
+			.button-secondary {
+				background: transparent;
+				color: var(--text);
+				border: 1px solid var(--border);
+			}
+
+			.button-secondary:hover {
+				border-color: var(--accent);
+				color: var(--accent);
+			}
+
+			.card {
+				background: var(--panel);
+				border: 1px solid var(--border);
+				border-radius: 12px;
+				padding: 14px 16px;
+				margin-top: 14px;
+			}
+
+			.card h3 {
+				margin: 0 0 6px;
+				font-size: 16px;
+			}
+
+			.card .meta {
+				color: var(--muted);
+				margin: 0 0 6px;
+				font-size: 14px;
+			}
+
+			.card .token {
+				word-break: break-all;
+				font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+				margin: 0;
+			}
+
 			.footer {
 				border-top: 1px solid var(--border);
 				padding: 20px 32px;
@@ -367,42 +476,36 @@
 				<div class="sidebar-header">
 					<h2>X Buddy</h2>
 				</div>
-				   <a
-					   href="#"
-					   class="nav-link active"
-					   data-section="general"
-					   >General</a
-				   >
-				   <a
-					   href="#"
-					   class="nav-link"
-					   data-section="filtering"
-					   >Filtering</a
-				   >
-				   <a
-					   href="#"
-					   class="nav-link"
-					   data-section="statistics"
-					   >Statistics</a
-				   >
-				   <a
-					   href="#"
-					   class="nav-link"
-					   data-section="export-import"
-					   >Export/Import</a
-				   >
-				   <a
-					   href="#"
-					   class="nav-link"
-					   data-section="history"
-					   >History</a
-				   >
-				   <a
-					   href="#"
-					   class="nav-link"
-					   data-section="account"
-					   >Account</a
-				   >
+				<a
+					href="#"
+					class="nav-link active"
+					data-section="general"
+					>General</a
+				>
+				<a
+					href="#"
+					class="nav-link"
+					data-section="filtering"
+					>Filtering</a
+				>
+				<a
+					href="#"
+					class="nav-link"
+					data-section="statistics"
+					>Statistics</a
+				>
+				<a
+					href="#"
+					class="nav-link"
+					data-section="export-import"
+					>Export/Import</a
+				>
+				<a
+					href="#"
+					class="nav-link"
+					data-section="account"
+					>Account</a
+				>
 			</div>
 			<div class="main">
 				<div class="main-content">
@@ -526,18 +629,18 @@
 						class="section-content">
 						<div class="main-header">
 							<h1>Export/Import</h1>
-							<p>Download or upload all settings and location data.</p>
+							<p>Backup and restore location history entries.</p>
 						</div>
 						<div class="section">
-							<p>Download all extension settings, locations, and history or import from a backup file.</p>
-							<button id="exportCsv">Export Settings</button>
+							<p style="margin: 0 0 8px; font-weight: 600">Location History Backup</p>
+							<button id="exportLocations">Export Location History</button>
 							<div class="import-row">
-								<label for="importCsv">Import Settings:</label>
+								<label for="importLocationsCsv">Import Location History:</label>
 								<input
 									type="file"
-									id="importCsv"
+									id="importLocationsCsv"
 									accept=".json,application/json" />
-								<button id="importCsvButton">Import</button>
+								<button id="importLocationsButton">Import</button>
 							</div>
 							<p
 								id="status"
@@ -545,28 +648,102 @@
 						</div>
 					</div>
 
-					   <div
-						   id="history"
-						   class="section-content">
-						   <div class="main-header">
-							   <h1>History</h1>
-							   <p>View location change history for accounts.</p>
-						   </div>
-						   <div class="section">
-							   <ul id="history-list"></ul>
-						   </div>
-					   </div>
-					   <div
-						   id="account"
-						   class="section-content">
-						   <div class="main-header">
-							   <h1>Account</h1>
-							   <p>Manage your X Buddy account login and registration.</p>
-						   </div>
-						   <div class="section">
-							   <iframe src="account.html" style="width:100%;height:300px;border:none;background:transparent;"></iframe>
-						   </div>
-					   </div>
+					<div
+						id="account"
+						class="section-content">
+						<div class="main-header">
+							<h1>Account</h1>
+							<p>Manage your X Buddy account login and registration.</p>
+						</div>
+						<div class="section">
+							<div class="account-container">
+								<div class="account-header">Sign in to X Buddy</div>
+								<p class="account-sub">Authenticate to sync with your X Buddy account.</p>
+								<p
+									id="accountStatus"
+									class="account-status">
+									Checking login status...
+								</p>
+								<form
+									id="loginForm"
+									class="account-form"
+									autocomplete="on">
+									<label>
+										Email
+										<input
+											id="emailInput"
+											name="email"
+											type="email"
+											placeholder="you@example.com"
+											required />
+									</label>
+									<label>
+										Password
+										<input
+											id="passwordInput"
+											name="password"
+											type="password"
+											placeholder="••••••••"
+											required />
+									</label>
+									<div
+										class="account-actions"
+										id="loginActions">
+										<button
+											id="loginSubmit"
+											type="submit">
+											Log In
+										</button>
+										<button
+											id="registerBtn"
+											type="button"
+											class="button-secondary">
+											Register
+										</button>
+									</div>
+								</form>
+								<div
+									id="sessionCard"
+									class="card"
+									hidden>
+									<p
+										class="meta"
+										id="userMeta">
+										<span id="userName"></span>
+										<a
+											href="#"
+											id="logoutBtn"
+											style="color: var(--accent); text-decoration: underline">
+											Log Out
+										</a>
+									</p>
+									<p class="meta">
+										Signature Version:
+										<span id="signatureVersionValue">0</span>
+									</p>
+									<p class="meta">Token</p>
+									<p
+										class="token"
+										id="tokenValue"></p>
+									<div
+										class="account-actions"
+										id="sessionActions">
+										<button
+											id="syncLocationsBtn"
+											type="button">
+											Sync Locations
+										</button>
+										<button
+											id="uploadLocationsBtn"
+											type="button"
+											class="button-secondary">
+											Upload Local Changes
+										</button>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -574,5 +751,6 @@
 			<small>Developed By Justin Greer</small>
 		</div>
 		<script src="options.js"></script>
+		<script src="account.js"></script>
 	</body>
 </html>

@@ -542,11 +542,26 @@ function updateLocationDisplays(username, location) {
 	});
 }
 
+const LOCATION_INSERTION_SELECTORS = ['[data-testid="tweetText"]', '[data-testid="tweetPhoto"]', '[data-testid="videoPlayer"]', '[data-testid="poll"]', '[data-testid="card.wrapper"]'];
+
+function getLocationInsertionPoint(tweet) {
+	for (const selector of LOCATION_INSERTION_SELECTORS) {
+		const candidate = tweet.querySelector(selector);
+		if (candidate?.parentNode) {
+			return { container: candidate.parentNode, reference: candidate };
+		}
+	}
+	const headerBlock = tweet.querySelector('[data-testid="User-Name"]');
+	if (headerBlock?.parentNode) {
+		return { container: headerBlock.parentNode, reference: headerBlock.nextSibling };
+	}
+	return null;
+}
+
 function renderLocationTag(tweet, location) {
 	if (!location) return;
-	// Find the tweet text container (post content)
-	const postContent = tweet.querySelector('[data-testid="tweetText"]');
-	if (!postContent) return;
+	const insertionPoint = getLocationInsertionPoint(tweet);
+	if (!insertionPoint) return;
 
 	// Remove any existing tag
 	let tag = tweet.querySelector(".xbuddy-location-tag");
@@ -571,8 +586,8 @@ function renderLocationTag(tweet, location) {
 		tag.appendChild(flagImg);
 	}
 
-	// Insert the location tag just above the post content
-	postContent.parentNode.insertBefore(tag, postContent);
+	// Insert the location tag near the main tweet content (text, media, or header fallback)
+	insertionPoint.container.insertBefore(tag, insertionPoint.reference || null);
 }
 
 function resolveLocationDisplay(location) {
